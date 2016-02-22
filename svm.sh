@@ -15,4 +15,7 @@ OUT_PATH+="/"
 
 make ConstructCodebook
 
-./ConstructCodebook $OUT_PATH
+#./ConstructCodebook $OUT_PATH
+
+../libsvm-3.21/svm-train -s 0 -t 0 $OUT_PATH"TrainingSet.data"
+../libsvm-3.21/svm-predict  $OUT_PATH"TestSet.data" $OUT_PATH"TrainingSet.data.model" $OUT_PATH"result.txt"
