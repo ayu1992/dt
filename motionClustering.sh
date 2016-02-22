@@ -7,8 +7,8 @@
 #protoc -I=proto
 
 CATEGORIES=('Diving' 'Lifting' 'Running')
-TYPE="TestingSet"
-vid=3
+TYPE="TrainingSet"
+vid=1
 NUM_CLUSTERS=1
 PARAM_R=3
 # NOTE: Running/3.avi was 4.avi

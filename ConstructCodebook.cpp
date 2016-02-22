@@ -22,6 +22,11 @@ const std::unordered_map<std::string, int> actionLabelLookUp ({
 	{"Running", 2}
 });
 
+/*
+ * videoList : contains video proto objects
+ * data : an empty matrix initialized with 0.0s
+ * Fills data row by row
+ */
 void ParseVideoListAndFillMatrix(const motionClustering::VideoList& videoList, float* data, int row, int col) {
 	int line = 0;
 
@@ -38,37 +43,81 @@ void ParseVideoListAndFillMatrix(const motionClustering::VideoList& videoList, f
 	std::cout << "Filled matrix with " <<line << " lines" << std::endl;
 }
 
-void writeFeatures() {}
+void writeCodeBookToFile(std::string filepath, float* centers) {
+	std::ofstream fout;
+	fout.open(filepath.c_str());
 
-/*
- * Reads "TrainingSetTrajectoryDump.data" and "TestingSetTrajecotryDump.data"
- * Construct codebook from training data
- * Output "TrainingSet.data" and "TestingSet.data"
- */
+	for (int i = 0; i < numCenters; i++) {
+		for (int j = 0; j < dimension; j++) {
+			fout << centers[ dimension * i + j] << " ";
+		}
+		fout << std::endl;
+	}
+	fout.close();
+}
+
+void getFeatureVectors(vl_uint32* assignments, float* features, const motionClustering::VideoList& videoList) {
+	// Initialize the matrix, unelegantly
+	for (int i = 0; i < videoList.videos_size(); i++) {		// Refactor!
+		for (int j = 0; j < numCenters; j++) {
+			features[i * numCenters + j] = 0.0;
+		}
+	}
+
+	int index = 0;
+	for (int video = 0; video < videoList.videos_size(); video++) {
+		int numTracks = videoList.videos(video).tracks_size();
+		for (int i = index; i < index + numTracks; i++) {
+			// Build normalized histograms
+			features[video * numCenters + assignments[i]] += static_cast<float>(1.0 / numTracks);			// Possible bug?
+		}
+		index += numTracks;
+	}
+}
+
+void writeFeaturesToFile(std::string filepath, float* features, const motionClustering::VideoList& videoList) {
+	std::ofstream fTrainingSet;
+	fTrainingSet.open(filepath.c_str());
+
+	// Label, index(1...):value
+	for (int video = 0; video < videoList.videos_size(); video++) {
+		fTrainingSet << actionLabelLookUp.at(videoList.videos(video).actionlabel()) << " ";
+		for (int i = 1; i <= numCenters; i++) {
+			fTrainingSet << i << ":" << features[video * numCenters + (i - 1)] << " ";
+		}
+		fTrainingSet << std::endl;
+	}
+	fTrainingSet.close();
+}
+
+int countTracks(const motionClustering::VideoList& videoList) {
+	int numData = 0;
+	for (auto v : videoList.videos()) {
+  		numData += v.tracks_size();
+  	}
+  	return numData;
+}
 int main(int argc, char* argv[]) {
-	motionClustering::VideoList videoList;
-	std::string dumpPath = argv[1];
-	std::string inputPath = dumpPath + "TrainingSetTrajectoryDump.data";
 
+	motionClustering::VideoList videoList;
+	// Read training data
+	std::string filepath = argv[1];
 	{
 	    // Read the existing video list
-	    std::fstream input( inputPath, std::ios::in | std::ios::binary);
+	    std::fstream input( filepath + "TrainingSetTrajectoryDump.data", std::ios::in | std::ios::binary);
 	    if (!videoList.ParseFromIstream(&input)) {
 	      std::cerr << "Failed to parse TrainingSetTrajectoryDump.data" << std::endl;
 	      return -1;
    		 }
   	}
 
-  	/* Move this into helper function? */
-	int numData = 0;	
-
-  	for (auto v : videoList.videos()) {
-  		numData += v.tracks_size();
-  	}
-
+  	// Count total number of tracks
+	int numData = countTracks(videoList);	
+  	
 	float data[numData][dimension];
   	ParseVideoListAndFillMatrix(videoList, (float*) data, numData, dimension);
 
+  	// Build codebook
   	VlKMeans* kmeans = vl_kmeans_new(VL_TYPE_FLOAT, VlDistanceL2);
   	vl_kmeans_set_algorithm (kmeans, VlKMeansLloyd) ;
 
@@ -82,18 +131,7 @@ int main(int argc, char* argv[]) {
 
 	// Output Codebook (4000 x 30, seperated by space character)
 	std::cout << "Writing codebook to file" <<  std::endl;
-	std::ofstream fout;
-	std::string codeBookPath = dumpPath + "Codebook.data";
-
-	fout.open(codeBookPath.c_str());
-
-	for (int i = 0; i < numCenters; i++) {
-		for (int j = 0; j < dimension; j++) {
-			fout << centers[ dimension * i + j] << " ";
-		}
-		fout << std::endl;
-	}
-	fout.close();
+	writeCodeBookToFile(filepath + "Codebook.data", centers);
 
 	// Construct feature vectors for training set
 	vl_uint32 assignments[numData];	//vl_uint32* assignments = vl_malloc(sizeof(vl_uint32) * numData);
@@ -102,95 +140,45 @@ int main(int argc, char* argv[]) {
 
 	// number of videos x 4000
 	float features[videoList.videos_size()][numCenters];
-	// Initialize the matrix, unelegantly
-	for (int i = 0; i < videoList.videos_size(); i++) {		// Refactor!
-		for (int j = 0; j < numCenters; j++) {
-			features[i][j] = 0.0;
-		}
-	}
-
-	int index = 0;
-	for (int video = 0; video < videoList.videos_size(); video++) {
-		int numTracks = videoList.videos(video).tracks_size();
-		for (int i = index; i < index + numTracks; i++) {
-			// Build normalized histograms
-			features[video][assignments[i]] += static_cast<float>(1.0 / numTracks);			// Possible bug?
-		}
-		index += numTracks;
-	}
+	getFeatureVectors(assignments, (float*) features, videoList);
 
 	// Output training set
 	std::cout << "Writing training set features to file" << std::endl;
-	std::ofstream fTrainingSet;
-	std::string trainingSet = dumpPath + "TrainingSet.data";
-	fTrainingSet.open(trainingSet.c_str());
+	std::string trainingSet = filepath + "TrainingSet.data";
+	writeFeaturesToFile(trainingSet, (float*) features, videoList);
 
-	// Label, index(1...):value
-	for (int video = 0; video < videoList.videos_size(); video++) {
-		fTrainingSet << actionLabelLookUp.at(videoList.videos(video).actionlabel()) << " ";
-		// TODO: make 4000 a constant in this file instead of hardcoding it everywhere.
-		for (int i = 1; i <= numCenters; i++) {
-			fTrainingSet << i << ":" << features[video][i - 1] << " ";
-		}
-		fTrainingSet << std::endl;
-	}
-	fTrainingSet.close();
+	// delete videoList?
 
 	// Read testing trajectory dump
-	std::string testingDump = argv[2];
-	std::string testingPath = testingDump + "TestSetTrajectoryDump.data";
 	motionClustering::VideoList testSetVideoList;
 
 	// Construct testing set
 	{
-		    // Read the existing video list
-		    std::fstream testSetInput( testingPath, std::ios::in | std::ios::binary);
-		    if (!testSetVideoList.ParseFromIstream(&testSetInput)) {
-		      std::cerr << "Failed to parse TestingTrajectoryDump.data" << std::endl;
-		      return -1;
-	   		 }
+		// Read the existing video list
+		std::fstream testSetInput( filepath + "TestingSetTrajectoryDump.data", std::ios::in | std::ios::binary);
+		if (!testSetVideoList.ParseFromIstream(&testSetInput)) {
+		   std::cerr << "Failed to parse TestingTrajectoryDump.data" << std::endl;
+		   return -1;
+	   	}
 	}
-	numData = ... 
+
+	numData = countTracks(testSetVideoList);
+
 	float testData[numData][dimension];
   	ParseVideoListAndFillMatrix(testSetVideoList, (float*) testData, numData, dimension);
+  	
   	// Construct feature vectors for testing set
 	vl_uint32 testSetAssignments[numData];	//vl_uint32* assignments = vl_malloc(sizeof(vl_uint32) * numData);
-	float distances[numData];	//float * distances = vl_malloc(sizeof(float) * numData);
-	vl_kmeans_quantize(kmeans, testSetAssignments, distances, data, numData);
+	float testSetDistances[numData];	//float * distances = vl_malloc(sizeof(float) * numData);
+	vl_kmeans_quantize(kmeans, testSetAssignments, testSetDistances, testData, numData);
 
-	// number of videos x 4000
 	float testSetFeatures[testSetVideoList.videos_size()][numCenters];
-	// Initialize the matrix, unelegantly
-	for (int i = 0; i < testSetVideoList.videos_size(); i++) {		// Refactor!
-		for (int j = 0; j < numCenters; j++) {
-			testSetFeatures[i][j] = 0.0;
-		}
-	}
-
-	int index = 0;
-	for (int video = 0; video < testSetVideoList.videos_size(); video++) {
-		int numTracks = testSetVideoList.videos(video).tracks_size();
-		for (int i = index; i < index + numTracks; i++) {
-			// Build normalized histograms
-			testSetFeatures[video][testSetAssignments[i]] += static_cast<float>(1.0 / numTracks);			// Possible bug?
-		}
-		index += numTracks;
-	}
+	getFeatureVectors(testSetAssignments, (float*) testSetFeatures, testSetVideoList);
 
 	// Output training set
 	std::cout << "Writing test set features to file" << std::endl;
-	std::ofstream fTestSet;
-	std::string testSet = dumpPath + "TestSet.data";
-	fTestSet.open(testSet.c_str());
-	// Label, index(1...):value
-	for (int video = 0; video < testSetVideoList.videos_size(); video++) {
-		fTestSet << actionLabelLookUp.at(testSetVideoList.videos(video).actionlabel()) << " ";
-		for (int i = 1; i <= numCenters; i++) {
-			fTestSet << i << ":" << testSetFeatures[video][i - 1] << " ";
-		}
-		fTestSet << std::endl;
-	}
-	fTestSet.close();
+	std::string testSet = filepath + "TestSet.data";
+	writeFeaturesToFile(testSet, (float*) testSetFeatures, testSetVideoList);
 
   	google::protobuf::ShutdownProtobufLibrary();
 	return 0;
