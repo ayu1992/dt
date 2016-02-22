@@ -1,0 +1,21 @@
+syntax = "proto3";
+package motionClustering;
+
+// TODO: pass in scale?
+// TODO: pass in descriptors?
+message Trajectory {
+	repeated float normalizedPoints = 1;
+}
+
+// A video is first represented by a group of selected trajectories
+// we later construct a universal codebook and process these trajectories into Bag of Words feature
+message VideoInstance {
+	string actionLabel = 1;
+	int32 videoIndex = 2;	// consistent with UCF ordering
+	int32 numClusters = 3;	// the parameter when pspectralclustering was run
+	repeated Trajectory tracks = 5;
+}
+
+message VideoList {
+	repeated VideoInstance videos = 1;
+}
