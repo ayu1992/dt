@@ -2,16 +2,16 @@
 # Computes dense trajectories of a video
 # Cluster the trajectories
 # Runs spectral clustering on the trajectories
+# For a specified NUM_CLUSTERS, generate track dumps of all videos
 
-#VIDEO_NAME="person01_boxing_d1_uncomp.avi"
-#protoc -I=proto
+# protoc -I=proto
+       
+declare -A CATEGORIES
+CATEGORIES=( ['BackGolf']=5 ['Diving']=14 ['FrontGolf']=8 ['FrontKick']=10 ['Horse']=12 ['Lifting']=6 ['Running']=13 ['SideGolf']=5 ['SideKick']=10 ['SideSwing']=13 ['Skateboard']=12 ['SwingBench']=20 ['Walking']=22)
 
-CATEGORIES=('Diving' 'Lifting' 'Running')
-TYPE="TrainingSet"
-vid=1
-NUM_CLUSTERS=1
+NUM_CLUSTERS=5
+
 PARAM_R=3
-# NOTE: Running/3.avi was 4.avi
 
 # Output path
 OUT_PATH="ClusteredTrajectories/r="
@@ -21,36 +21,77 @@ OUT_PATH+=$NUM_CLUSTERS
 OUT_PATH+="/"
 
 # Wipe out previously generated dump
-rm $OUT_PATH$TYPE"TrajectoryDump.data"
 
-
+#Side swing 8 has 0 tracks
+# Running 13 has 0 tracks
+# Horses 9 got stuck in some loops
 # Dump out dominant trajectories for these videos, dest:TrajectoryDump.data
 make ClusterTraj
 make DumpDominantTrajectoryCluster
 
-for CATEGORY in "${CATEGORIES[@]}"
-do
-	START_TIME=$(date +%s)
-	INPUT_VIDEO=$vid
-	VIDEO_NAME="InputVideos/" 
-	VIDEO_NAME+=$CATEGORY
-	VIDEO_NAME+="/" 
-	VIDEO_NAME+=$INPUT_VIDEO 
-	VIDEO_NAME+=".avi"
-	echo $VIDEO_NAME
+START_TIME=$(date +%s)
 
-	../improved_trajectory_release/release/DenseTrackStab $VIDEO_NAME > out.features
-	./ClusterTraj
-	mpiexec -n 2 ../pspectralclustering/distance_to_similarity --input dij.txt --output similarity.txt
-	NUM_SPACE=5	
-	mpiexec -n 10 ../pspectralclustering/evd --eigenvalue $NUM_CLUSTERS --eigenspace $NUM_SPACE --input similarity.txt --eigenvalues_output eigenvalues.txt --eigenvectors_output eigenvectors.txt
-	mpiexec -n 4 ../pspectralclustering/kmeans --num_clusters $NUM_CLUSTERS --input eigenvectors.txt --output result.txt
-	./DumpDominantTrajectoryCluster $OUT_PATH $CATEGORY $vid $NUM_CLUSTERS $TYPE
-	
-	END_TIME=$(date +%s)
-	EXECUTION_TIME=$(($END_TIME - $START_TIME))
-	echo "Execution time: $EXECUTION_TIME seconds"
+for CATEGORY in "${!CATEGORIES[@]}"			# '!' expands keys, no '!' expands values
+do
+	for (( vid=1; vid <= ${CATEGORIES[$CATEGORY]}; vid++))
+	do 
+
+		if [ $vid -eq 5 ] && [ $CATEGORY == 'FrontGolf' ] 
+			then
+				continue
+		fi
+
+		if [ $vid -eq 8 ] && [ $CATEGORY == 'FrontGolf' ] 
+			then
+				continue
+		fi
+
+		if [ $vid -eq 2 ] && [ $CATEGORY == 'SideGolf' ] 
+			then
+				continue
+		fi
+
+		if [ $vid -eq 3 ] && [ $CATEGORY == 'SideSwing' ] 
+			then
+				continue
+		fi
+
+		if [ $vid -eq 5 ] && [ $CATEGORY == 'SideSwing' ] 
+			then
+				continue
+		fi
+
+		if [ $vid -eq 8 ] && [ $CATEGORY == 'SideSwing' ] 
+			then
+				continue
+		fi
+
+		INPUT_VIDEO=$vid
+		VIDEO_NAME="InputVideos/" 
+		VIDEO_NAME+=$CATEGORY
+		VIDEO_NAME+="/" 
+		VIDEO_NAME+=$INPUT_VIDEO 
+		VIDEO_NAME+=".avi"
+		echo $VIDEO_NAME
+
+		../improved_trajectory_release/release/DenseTrackStab $VIDEO_NAME > out.features
+		./ClusterTraj
+		mpiexec -n 2 ../pspectralclustering/distance_to_similarity --input dij.txt --output similarity.txt
+		NUM_SPACE=10
+		mpiexec -n 10 ../pspectralclustering/evd --eigenvalue $NUM_CLUSTERS --eigenspace $NUM_SPACE --input similarity.txt --eigenvalues_output eigenvalues.txt --eigenvectors_output eigenvectors.txt
+		mpiexec -n 4 ../pspectralclustering/kmeans --num_clusters $NUM_CLUSTERS --input eigenvectors.txt --output result.txt
+		./DumpDominantTrajectoryCluster $OUT_PATH $CATEGORY $vid $NUM_CLUSTERS
+		
+		rm similarity.txt
+		rm dij.txt
+		rm eigenvectors.txt
+		rm eigenvalues.txt
+	done
 done
+
+END_TIME=$(date +%s)
+EXECUTION_TIME=$(($END_TIME - $START_TIME))
+echo "Execution time: $EXECUTION_TIME seconds"
 
 
 

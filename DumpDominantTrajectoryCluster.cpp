@@ -15,6 +15,7 @@
 void extractTrajectoriesOfLargestCluster(const std::string& filename, const std::unordered_map<int, int>& clusterId, int largestClusterId, motionClustering::VideoInstance* video) {
 	// read the trajectories by line
 	std::string line;
+	int numLines = 0;
 	std::ifstream fin(filename.c_str());
 	if (!fin) {
 		std::cerr << "Unable to open file : " << filename << std::endl;
@@ -25,7 +26,7 @@ void extractTrajectoriesOfLargestCluster(const std::string& filename, const std:
 		std::vector<float> val = split(line, ' ');
 
 		// If this trajectory belongs to the largest cluster, dump it!
-		if (largestClusterId == clusterId.at(val[0])) {
+		if (largestClusterId == clusterId.find(val[0])->second) {
 			motionClustering::Trajectory* newTrajectory = video->add_tracks();
 			/*
 			This code is fine as is. If you're interested in std::copy, you can do this instead:
@@ -37,21 +38,48 @@ void extractTrajectoriesOfLargestCluster(const std::string& filename, const std:
 			for(auto val_it = val.begin() + 6; val_it != val.end(); ++val_it) {		// refactor with std::copy?
 				newTrajectory->add_normalizedpoints(*val_it);
 			}
-			
 		}
+		numLines++;
 	}
+	std::cout << "There are a total of " << numLines << "tracks after pspectral" << std::endl;
 }
 
-int main(int argc, char** argv) { // argv format: output path, actionLabel, video index, num clusters used during pspectral, data set type
-
+int main(int argc, char** argv) { // argv format: output path, actionLabel, video index, num clusters used during pspectral
+	// trj -> cid
 	std::unordered_map<int, int> clusterId;
 
 	// trajectory id -> vector<Point2f>, scales, frames
-	const std::string trjFilename = "sortedTrajectories.txt";
+	const std::string trjFilename = "sortedTrajectories.txt";			// contains A video
 
 	std::string outpath = argv[1];
-	outpath += argv[5];
 	outpath += "TrajectoryDump.data";
+
+	// Read result.txt	
+	readClusterId("result.txt", clusterId);
+
+	// TODO: How about std::atoi instead of istringstream?
+	// Parse and get video information
+	int videoIndex, numClusters;
+	std::istringstream getVideoIndex(argv[3]);
+    getVideoIndex >> videoIndex;
+   	std::istringstream getNumClusters(argv[4]);
+    getNumClusters >> numClusters;
+
+	// Identify the biggest cluster (cid)	
+	std::vector<int> clusterSizes(numClusters, 0);
+
+	for (const auto pair: clusterId) {
+		clusterSizes[pair.second] += 1;
+	}
+
+	// TODO: Maybe change arg type of the lambda to "const std::pair<int, size_t>&".
+	auto maxElemIter = std::max_element(clusterSizes.begin(), clusterSizes.end());
+	int largestClusterId = std::distance(clusterSizes.begin(), maxElemIter);
+
+	std::cout << "Largest cluster id: " << largestClusterId << std::endl;
+	// Construct proto information : action label, video id (UCF ordering), number of clusters run on pspectral, number of trajs, 
+	// if this video contains more than 0 trajectories, extract largest cluster and write
+	// else skip this video
 
 	motionClustering::VideoList videos;
 	{
@@ -65,50 +93,28 @@ int main(int argc, char** argv) { // argv format: output path, actionLabel, vide
 	    }
     }
 
-	// Read result.txt	
-	readClusterId("result.txt", clusterId);
 
-	// Identify the biggest cluster (cid)
-	std::map<int, size_t> clusterSizes;	// count the total occurrence for each cluster id
-	for (const auto pair: clusterId) {
-		++clusterSizes[pair.second];
-	}
-
-	// TODO: Maybe change arg type of the lambda to "const std::pair<int, size_t>&".
-	int largestClusterId = std::max_element( clusterSizes.begin(), clusterSizes.end(), 
-	[] ( std::pair<int, size_t> const &a, std::pair<int, size_t> const &b) {
-		return a.second < b.second;
-	})->first;
-
-	// TODO: How about std::atoi instead of istringstream?
-	// Parse and get video information
-	int videoIndex, numClusters;
-	std::istringstream getVideoIndex(argv[3]);
-    getVideoIndex >> videoIndex;
-   	std::istringstream getNumClusters(argv[4]);
-    getNumClusters >> numClusters;
-
-	// Construct proto information : action label, video id (UCF ordering), number of clusters run on pspectral, number of trajs, 
 	motionClustering::VideoInstance* this_video = videos.add_videos();
 
-	this_video->set_actionlabel(argv[2]);
+	std::string label = argv[2];
+	this_video->set_actionlabel(label);
 	this_video->set_videoindex(videoIndex);
 	this_video->set_numclusters(numClusters);
 
 	// Read sortedTrajectories.txt
 	// If the traj belongs to cid, add to proto
     extractTrajectoriesOfLargestCluster(trjFilename, clusterId, largestClusterId, this_video);
-    std::cout << "Dominant cluster contains " << clusterSizes[largestClusterId] << " tracks" << std::endl;
-    std::cout << this_video->tracks_size() << " tracks written to output" << std::endl;
-	{
-		// Dump the proto
-		std::fstream output( outpath, std::ios::out | std::ios::trunc | std::ios::binary);
-	    if (!videos.SerializeToOstream(&output)) {
-	      std::cerr << "Failed to write data dump." << std::endl;
-	      return -1;
-	    }
+    std::cout << "The dominant cluster contains " << clusterSizes[largestClusterId] << " tracks" << std::endl;
+    
+    std::cout << "So " << this_video->tracks_size() << " tracks will be written to output" << std::endl;
+	  // Dump the proto
+	std::fstream output( outpath, std::ios::out | std::ios::trunc | std::ios::binary);
+	if (!videos.SerializeToOstream(&output)) {
+	   std::cerr << "Failed to write data dump." << std::endl;
+	   return -1;
 	}
 
+	clusterId.clear();
     google::protobuf::ShutdownProtobufLibrary();
 	return 0;
 }
