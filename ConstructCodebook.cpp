@@ -19,7 +19,7 @@ extern "C" {
 
 const int dimension = 30;
 const int numCenters = 4000;
-const int numCodebookIter = 8;
+const int numCodebookIter = 2;
 
 const std::unordered_map<std::string, int> actionLabelLookUp ({
 	{"BackGolf", 0},
@@ -70,42 +70,6 @@ void parseVideoList(const motionClustering::VideoList& videoList, std::map<int, 
 	}
 }
 
-void getFeatureVectors(vl_uint32* assignments, float* features, const motionClustering::VideoList& videoList) {
-	// Initialize the matrix, unelegantly
-	std::cout << "getFeatureVectors" << std::endl;
-	for (int i = 0; i < videoList.videos_size(); i++) {		// Refactor!
-		for (int j = 0; j < numCenters; j++) {
-			features[i * numCenters + j] = 0.0;
-		}
-	}
-
-	int index = 0;
-	for (int video = 0; video < videoList.videos_size(); video++) {
-		int numTracks = videoList.videos(video).tracks_size();
-		for (int i = index; i < index + numTracks; i++) {
-			// Build normalized histograms
-			features[video * numCenters + assignments[i]] += static_cast<float>(1.0 / numTracks);			// Possible bug?
-		}
-		index += numTracks;
-	}
-}
-
-void writeFeaturesToFile(std::string filepath, float* features, const motionClustering::VideoList& videoList) {
-	std::cout << "Writing features to file" << std::endl;
-	std::ofstream fTrainingSet;
-	fTrainingSet.open(filepath.c_str());
-
-	// Label, index(1...):value
-	for (int video = 0; video < videoList.videos_size(); video++) {
-		fTrainingSet << actionLabelLookUp.at(videoList.videos(video).actionlabel()) << " ";
-		for (int i = 1; i <= numCenters; i++) {
-			fTrainingSet << i << ":" << features[video * numCenters + (i - 1)] << " ";
-		}
-		fTrainingSet << std::endl;
-	}
-	fTrainingSet.close();
-}
-
 int countTracks(const motionClustering::VideoList& videoList) {
 	int numData = 0;
 	for (auto v : videoList.videos()) {
@@ -138,6 +102,8 @@ void generateCrossValidationSets(const std::map<int, std::vector<int>>& usableVi
 
 		dataSplitForClass[classId].TrainingSetVid.assign(5, {});
 		dataSplitForClass[classId].ValidationSetVid.assign(5, {});
+		dataSplitForClass[classId].TrainingSetSizes.assign(5, 0);
+		dataSplitForClass[classId].ValidationSetSizes.assign(5, 0);
 
 		// Training set and Validation set for five folds
 		for (int fold = 0; fold < 5; ++fold) {
@@ -154,12 +120,9 @@ void generateCrossValidationSets(const std::map<int, std::vector<int>>& usableVi
 
 void countTrackSizes(std::map<int, DataSplit>& dataSplitForClass, const motionClustering::VideoList& videoList) {
 	for (int fold = 0; fold < 5; ++fold) {
-		for (auto actionClass : dataSplitForClass) {
+		for (auto& actionClass : dataSplitForClass) {
 			DataSplit& dataSplit = actionClass.second;
-			
-			dataSplit.TrainingSetSizes[fold] = 0;
-			dataSplit.ValidationSetSizes[fold] = 0;
-
+		
 			std::set<int>& trainingvids = dataSplit.TrainingSetVid[fold];
 			std::set<int>& validationvid = dataSplit.ValidationSetVid[fold];
 			
@@ -183,6 +146,45 @@ void printUsableVideos(const std::map<int, std::vector<int>>& usableVideos) {
   		std::cout << std::endl;
   	}
   	std::cout << "====================================================================" << std::endl;
+  	return;
+}
+
+void getFeatureVectors(vl_uint32* assignments, float* features, const motionClustering::VideoList& videoList, const std::vector<int>& vidInSequence) {
+	// Initialize the matrix, unelegantly
+	std::cout << "getFeatureVectors" << std::endl;
+	for (int i = 0; i < vidInSequence.size(); i++) {		// Refactor!
+		for (int j = 0; j < numCenters; j++) {
+			features[i * numCenters + j] = 0.0;
+		}
+	}
+
+	int index = 0;
+	// n videos -> features will be n x 4000
+	for (int row = 0; row < vidInSequence.size(); row++) {		// For each row in features
+		int vid = vidInSequence[row];							// reference of this video in videoList
+		int numTracks = videoList.videos(vid).tracks_size();
+		for (int i = index; i < index + numTracks; i++) {
+			// Build normalized histograms
+			features[row * numCenters + assignments[i]] += static_cast<float>(1.0 / numTracks);
+		}
+		index += numTracks;
+	}
+}
+
+void writeFeaturesToFile(std::string filepath, float* features, const motionClustering::VideoList& videoList, const std::vector<int>& vidInSequence) {
+	std::cout << "Writing features to file" << std::endl;
+	std::ofstream fTrainingSet;
+	fTrainingSet.open(filepath.c_str());
+
+	// Label, index(1...):value
+	for (int row = 0; row < vidInSequence.size(); row++) {
+		fTrainingSet << actionLabelLookUp.at(videoList.videos(vidInSequence[row]).actionlabel()) << " ";
+		for (int i = 1; i <= numCenters; i++) {
+			fTrainingSet << i << ":" << features[row * numCenters + (i - 1)] << " ";
+		}
+		fTrainingSet << std::endl;
+	}
+	fTrainingSet.close();
 }
 
 int main(int argc, char* argv[]) {
@@ -204,36 +206,35 @@ int main(int argc, char* argv[]) {
 
 	// action label -> indices in videoList (videos with > 0 tracks only)
 	std::map<int, std::vector<int>> usableVideos;
+
   	parseVideoList(videoList, usableVideos);
-  	std::cout << "hi";
-  	printUsableVideos(usableVideos);
- std::cout << "hi";
+
+ 	printUsableVideos(usableVideos);
+
     // Partition data into training set, validation set and testing set
     std::map<int, DataSplit> dataSplitForClass;   	// action label -> DataSplit
-std::cout << "hi";
+
     generateCrossValidationSets(usableVideos, dataSplitForClass);
-std::cout << "hi";
+
     countTrackSizes(dataSplitForClass, videoList);
-std::cout << "hi";
+
   	// Count total number of tracks are going to be used for codebook
 	int numData = 0;
-	for (auto actionClass : dataSplitForClass) {
+	for (const auto& actionClass : dataSplitForClass) {
 		numData += actionClass.second.TrainingSetSizes[0];
 		numData += actionClass.second.ValidationSetSizes[0];
 	}
 
-	std::cout << "Codebook uses " << numData << " tracks" << std::endl;
-	
 	// Wraps around a float[numData * dimension].
 	std::unique_ptr<float[]> data(new float[numData * dimension]);
 
 	// Fill up data
 	int row = 0;
-	for (auto actionClass : dataSplitForClass) {
+	for (const auto& actionClass : dataSplitForClass) {
 		// Use the data of the 1st fold
 		for (int vid : actionClass.second.TrainingSetVid[0]) {
 			const google::protobuf::RepeatedPtrField< ::motionClustering::Trajectory >& tracks = videoList.videos(vid).tracks();
-			for (auto t : tracks) {
+			for (const auto& t : tracks) {
 				for (int i = 0; i < dimension; ++i) {
 					data[row * dimension + i] = t.normalizedpoints(i);
 				}
@@ -243,7 +244,7 @@ std::cout << "hi";
 
 		for (int vid : actionClass.second.ValidationSetVid[0]) {
 			const google::protobuf::RepeatedPtrField< ::motionClustering::Trajectory >& tracks = videoList.videos(vid).tracks();
-			for (auto t : tracks) {
+			for (const auto& t : tracks) {
 				for (int i = 0; i < dimension; ++i) {
 					data[row * dimension + i] = t.normalizedpoints(i);
 				}
@@ -251,7 +252,7 @@ std::cout << "hi";
 			}
 		}
 	}
-    std::cout << row << " rows were written to codebook data" << std::endl;
+    std::cout << row << " tracks were used for codebook" << std::endl;
 
   	/* Randomly select 100,000 training features*/
 	
@@ -290,22 +291,58 @@ std::cout << "hi";
 		sumDistances.push_back(sum);
 		delete[] distances;
   	}
-	
+
 	 // Use the centers with lowest sum of distances as codebook
 	 auto lowestDistance_it = std::min_element(sumDistances.begin(), sumDistances.end());
 	 int codebook_index = std::distance(sumDistances.begin(), lowestDistance_it);
 
 	 /* Generate 5 training sets, 5 validation sets and 1 testing set */
-//	 for (int fold = 1; fold <= 5; ++fold) {
+	 for (int fold = 0; fold < 5; ++fold) {
+
+	 	/** GENERATE TRAINING SETS **/
+		numData = 0;
+		int numTrainingSetVideos = 0;
+		for (const auto& actionClass : dataSplitForClass) {
+			numData += actionClass.second.TrainingSetSizes[fold];
+			numTrainingSetVideos += actionClass.second.TrainingSetVid[fold].size();
+		}
+
+		std::unique_ptr<float[]> trainingData(new float[numData * dimension]);
+
+		// Fill up trainingData
+		int row = 0;
+		std::vector<int> vidInSequence;
+		for (const auto& actionClass : dataSplitForClass) {
+			for (int vid : actionClass.second.TrainingSetVid[fold]) {
+				vidInSequence.push_back(vid);
+				const google::protobuf::RepeatedPtrField< ::motionClustering::Trajectory >& tracks = videoList.videos(vid).tracks();
+				for (const auto& t : tracks) {
+					for (int i = 0; i < dimension; ++i) {
+						trainingData[row * dimension + i] = t.normalizedpoints(i);
+					}
+					row++;
+				}
+			}
+		}
+
+		vl_uint32* assignments = new vl_uint32[numData];
+		float* distances = new float[numData];
+
+		vl_kmeans_quantize(&kmeansInstances[codebook_index], assignments, distances, trainingData.get(), numData);
+
 		// number of videos x 4000
-//		std::unique_ptr<float[]> features(new float[videoList.videos_size() * numCenters]);
-//		getFeatureVectors(kmeansAssignments[codebook_index], features.get(), videoList);
+		std::unique_ptr<float[]> features(new float[numTrainingSetVideos * numCenters]);
+
+		getFeatureVectors(assignments, features.get(), videoList, vidInSequence);
+
+		delete[] assignments;
+		delete[] distances;
 
 		// Output training set
-//		std::cout << "Writing training set features to file" << std::endl;
-//		std::string trainingSetPath = filepath + "TrainingSet" + fold ".data";
-//		writeFeaturesToFile(trainingSetPath, features.get(), videoList);
-//	}
+		std::cout << "Writing training set features to file" << std::endl;
+		std::string trainingSetPath = filepath + "TrainingSet" + std::to_string(fold) + ".data";
+		writeFeaturesToFile(trainingSetPath, features.get(), videoList, vidInSequence);
+	}
 
 	// Construct testing set
 	/*
