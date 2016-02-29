@@ -26,7 +26,7 @@ void extractTrajectoriesOfLargestCluster(const std::string& filename, const std:
 		std::vector<float> val = split(line, ' ');
 
 		// If this trajectory belongs to the largest cluster, dump it!
-		if (largestClusterId == clusterId.find(val[0])->second) {
+		if (largestClusterId == clusterId.find(static_cast<int>(val[0]))->second) {
 			motionClustering::Trajectory* newTrajectory = video->add_tracks();
 			/*
 			This code is fine as is. If you're interested in std::copy, you can do this instead:
@@ -61,14 +61,14 @@ int main(int argc, char** argv) { // argv format: output path, actionLabel, vide
 	// Parse and get video information
 	int videoIndex, numClusters;
 	std::istringstream getVideoIndex(argv[3]);
-    getVideoIndex >> videoIndex;
-   	std::istringstream getNumClusters(argv[4]);
-    getNumClusters >> numClusters;
+  getVideoIndex >> videoIndex;
+  std::istringstream getNumClusters(argv[4]);
+  getNumClusters >> numClusters;
 
 	// Identify the biggest cluster (cid)	
 	std::vector<int> clusterSizes(numClusters, 0);
 
-	for (const auto pair: clusterId) {
+	for (const auto& pair: clusterId) {
 		clusterSizes[pair.second] += 1;
 	}
 
@@ -83,38 +83,36 @@ int main(int argc, char** argv) { // argv format: output path, actionLabel, vide
 
 	motionClustering::VideoList videos;
 	{
-	    // Read the existing trajectory dump
-	    std::fstream input( outpath, std::ios::in | std::ios::binary);
-	    if (!input) {
-	      std::cout << ": File not found.  Creating a new file." << std::endl;
-	    } else if (!videos.ParseFromIstream(&input)) {
-	      std::cerr << "Failed to parse videos." << std::endl;
-	      return -1;
-	    }
-    }
+	  // Read the existing trajectory dump
+	  std::fstream input( outpath, std::ios::in | std::ios::binary);
+	  if (!input) {
+	    std::cout << ": File not found.  Creating a new file." << std::endl;
+	  } else if (!videos.ParseFromIstream(&input)) {
+	    std::cerr << "Failed to parse videos." << std::endl;
+	    return -1;
+	  }
+  }
 
 
 	motionClustering::VideoInstance* this_video = videos.add_videos();
 
-	std::string label = argv[2];
-	this_video->set_actionlabel(label);
+	this_video->set_actionlabel(argv[2]);
 	this_video->set_videoindex(videoIndex);
 	this_video->set_numclusters(numClusters);
 
 	// Read sortedTrajectories.txt
 	// If the traj belongs to cid, add to proto
-    extractTrajectoriesOfLargestCluster(trjFilename, clusterId, largestClusterId, this_video);
-    std::cout << "The dominant cluster contains " << clusterSizes[largestClusterId] << " tracks" << std::endl;
-    
-    std::cout << "So " << this_video->tracks_size() << " tracks will be written to output" << std::endl;
-	  // Dump the proto
+  extractTrajectoriesOfLargestCluster(trjFilename, clusterId, largestClusterId, this_video);
+  std::cout << "The dominant cluster contains " << clusterSizes[largestClusterId] << " tracks" << std::endl;
+  
+  std::cout << "So " << this_video->tracks_size() << " tracks will be written to output" << std::endl;
+	// Dump the proto
 	std::fstream output( outpath, std::ios::out | std::ios::trunc | std::ios::binary);
 	if (!videos.SerializeToOstream(&output)) {
 	   std::cerr << "Failed to write data dump." << std::endl;
 	   return -1;
 	}
 
-	clusterId.clear();
-    google::protobuf::ShutdownProtobufLibrary();
+  google::protobuf::ShutdownProtobufLibrary();
 	return 0;
 }
