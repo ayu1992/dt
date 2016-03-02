@@ -9,9 +9,10 @@
 declare -A CATEGORIES
 #CATEGORIES=( ['BackGolf']=5 ['Diving']=14 ['FrontGolf']=8 ['FrontKick']=10 ['Horse']=12 ['Lifting']=6 ['Running']=13 ['SideGolf']=5 ['SideKick']=10 ['SideSwing']=13 ['Skateboard']=12 ['SwingBench']=20 ['Walking']=22)
 CATEGORIES=(['Diving']=8 ['Horse']=8 ['Lifting']=6 ['SwingBench']=8 ['SideSwing']=9 ['Running']=7 ['Skateboard']=8 ['FrontGolf']=8 ['Walking']=8)
+#CATEGORIES=(['FrontGolf']=2)
 NUM_CLUSTERS=2
 
-PARAM_R=50
+PARAM_R=90
 
 # Output path
 OUT_PATH="ClusteredTrajectories/r="
@@ -22,7 +23,7 @@ OUT_PATH+="/"
 
 # Wipe out previously generated dump
 
-#Side swing 8 has 0 tracks
+# Side swing 8 has 0 tracks
 # Running 13 has 0 tracks
 # Horses 9 got stuck in some loops
 # Dump out dominant trajectories for these videos, dest:TrajectoryDump.data
@@ -66,6 +67,8 @@ do
 				continue
 		fi
 
+		
+		
 		INPUT_VIDEO=$vid
 		VIDEO_NAME="InputVideos/" 
 		VIDEO_NAME+=$CATEGORY
@@ -73,13 +76,15 @@ do
 		VIDEO_NAME+=$INPUT_VIDEO 
 		VIDEO_NAME+=".avi"
 		echo $VIDEO_NAME
-
+		
+		rm $OUT_PATH"sortedTrajectories.out"
+		rm $OUT_PATH"result.txt"
 		../improved_trajectory_release/release/DenseTrackStab $VIDEO_NAME > out.features
-		./ClusterTraj
+		./ClusterTraj $OUT_PATH
 		mpiexec -n 2 ../pspectralclustering/distance_to_similarity --input dij.txt --output similarity.txt
 		NUM_SPACE=10
 		mpiexec -n 10 ../pspectralclustering/evd --eigenvalue $NUM_CLUSTERS --eigenspace $NUM_SPACE --input similarity.txt --eigenvalues_output eigenvalues.txt --eigenvectors_output eigenvectors.txt
-		mpiexec -n 4 ../pspectralclustering/kmeans --num_clusters $NUM_CLUSTERS --input eigenvectors.txt --output result.txt
+		mpiexec -n 4 ../pspectralclustering/kmeans --num_clusters $NUM_CLUSTERS --input eigenvectors.txt --output $OUT_PATH"result.txt"
 		./DumpDominantTrajectoryCluster $OUT_PATH $CATEGORY $vid $NUM_CLUSTERS
 		
 		rm similarity.txt

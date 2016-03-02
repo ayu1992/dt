@@ -2,9 +2,20 @@ syntax = "proto3";
 package motionClustering;
 
 // TODO: pass in scale?
-// TODO: pass in descriptors?
+// Because class Track in DenseTrack.h is shitty, we're packing descriptor information in a new proto container
+// Trajectories contain 15 points by default
 message Trajectory {
-	repeated float normalizedPoints = 1;
+	int32 trackId = 1;
+	repeated float normalizedPoints = 2;
+	repeated float hog = 3;
+	repeated float hof = 4;
+	repeated float mbhX = 5;
+	repeated float mbhY = 6;
+}
+
+//
+message TrajectoryList {
+	repeated Trajectory tracks = 1;	
 }
 
 // A video is first represented by a group of selected trajectories
@@ -13,7 +24,7 @@ message VideoInstance {
 	string actionLabel = 1;
 	int32 videoIndex = 2;	// consistent with UCF ordering
 	int32 numClusters = 3;	// the parameter when pspectralclustering was run
-	repeated Trajectory tracks = 5;
+	repeated Trajectory tracks = 4;
 }
 
 message VideoList {

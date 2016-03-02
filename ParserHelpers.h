@@ -1,3 +1,10 @@
+const int TRACK_INFO_LEN = 10;
+const int TRACK_LEN = 15;
+const int HOG_DIM = 96;
+const int HOF_DIM = 108;
+const int MBHX_DIM = 96;
+const int MBHY_DIM = 96;
+
 // Splits a string into tokens by delim character
 std::vector<float> split(const std::string& str, char delim) {
 	std::vector<float> elems;

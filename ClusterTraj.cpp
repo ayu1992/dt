@@ -3,6 +3,7 @@
 #include "Descriptors.h"
 #include "Util.h"
 #include "ParserHelpers.h"
+#include "dump.pb.h"
 #include <algorithm>
 #include <cmath>
 #include <fstream>
@@ -10,14 +11,8 @@
 
 // Dimension information to parse input file
 
-const int TRACK_INFO_LEN = 10;
-const int TRACK_LEN = 15;
-const int HOG_DIM = 96;
-const int HOF_DIM = 108;
-const int MBHX_DIM = 96;
-const int MBHY_DIM = 96;
 const double TAU_S = 16.0;
-const double r = 80;    // eq 4
+const double r = 90;    // eq 4
 using namespace cv;
 
 /**
@@ -80,13 +75,13 @@ double spatialDistance(const Point2f& p1, const Point2f& p2) {
 
 void printDistanceMatrix(const std::string& filename, const std::map<std::pair<int, int>, double>& D, const int N) {
   std::ofstream fout;
-  std::cout << "Opening output file" << std::endl;
+  std::cout << "[Dump] Opening output file" << std::endl;
   fout.open(filename.c_str());
   // [[trj 0's neighbors], [trj 1's neighbors], ..., [trj N-1's]]
   std::vector<std::vector<std::pair<int, double>>> neighbors(N);
 
-  std::cout << "Constructing adjacency lists" << std::endl;
-  std::cout << "neighbors contains : " << neighbors.size() << "nodes" << std::endl;
+  std::cout << "[Dump] Constructing adjacency lists" << std::endl;
+  std::cout << "[Dump] neighbors contains : " << neighbors.size() << " nodes" << std::endl;
   // iterate every pair in D
   for (const auto& pair : D) {
       int trj_i = pair.first.first;
@@ -98,7 +93,7 @@ void printDistanceMatrix(const std::string& filename, const std::map<std::pair<i
 
   } // end of iterating D
 
-  std::cout << "Sort everyone's neighbors list and file I/O" << std::endl;
+  std::cout << "[Dump] Sort everyone's neighbors list and file I/O" << std::endl;
   // sort and print each list in neighbors
   for(auto& v : neighbors) {
       // sort v's neighbors by their trajectory index
@@ -120,18 +115,35 @@ void printDistanceMatrix(const std::string& filename, const std::map<std::pair<i
 /**
  * Line format: trajectory id, ending frame number, scale, [(x1, y1), (x2, y2) ...]
  */
-void printSortedTrajectories(const std::string& filename, const std::vector<TrackTube>& tracks) {
+void dumpSortedTrajectories(const std::string& filename, const std::vector<TrackTube>& tracks) {
   std::ofstream fout;
-  std::cout << "Opening output file" << std::endl;
-  fout.open(filename.c_str());
+  std::cout << "[Dump] Opening output file : " << filename << std::endl;
+  fout.open(filename, std::ofstream::out | std::ofstream::app);
 
   int trackId = 0;
-  for(const auto& t : tracks) {
+  for (const auto& t : tracks) {
     fout << trackId << " " << t.trackTubeInfo.endingFrame << " " << t.trackTubeInfo.scale << " " << t.trackTubeInfo.length << " "
         << t.trackTubeInfo.mean_x << " " << t.trackTubeInfo.mean_y << " ";
-    for(int i = 0; i < TRACK_LEN; i++) {
+    for ( int i = 0; i < TRACK_LEN; ++i) {
       fout << t.track.point[i].x << " " << t.track.point[i].y << " ";
     }
+
+    for (int i = 0; i < HOG_DIM; ++i) {
+      fout << t.track.hog[i] << " ";
+    }
+
+    for (int i = 0; i < HOF_DIM; ++i) {
+      fout << t.track.hof[i] << " ";
+    }
+
+    for (int i = 0; i < MBHX_DIM; ++i) {
+      fout << t.track.mbhX[i] << " ";
+    }
+
+    for (int i = 0; i < MBHY_DIM; ++i) {
+      fout << t.track.mbhY[i] << " ";
+    }
+
     fout << std::endl;
     trackId++;
   }
@@ -139,31 +151,10 @@ void printSortedTrajectories(const std::string& filename, const std::vector<Trac
   return;
 }
 
-int main() {
-  std::vector<TrackTube> trackTubes; 
-  std::vector<std::string> trajInStrings;
-
-  // Read and parse feature dump
-  std::cout << "Reading trajectories" << std::endl;
-  readFileIntoStrings("out.features", trajInStrings);
-  std::cout << "Parsing trajectories" << std::endl;
-  parseStringsToTrackTubes(trajInStrings, TRACK_LEN, trackTubes); 
-  std::cout << trackTubes.size() << " trajectories in total" << std::endl;
-  
-  std::cout << "Sorting trajectories by ending frame" << std::endl;
-  // Sort all tracks by ending frame
-  std::sort(
-    trackTubes.begin(), 
-    trackTubes.end(), 
-    [](const TrackTube &a, const TrackTube &b) {
-      return a.trackTubeInfo.endingFrame < b.trackTubeInfo.endingFrame;});
-
-  // Output traj index, points
-
-  // Generate Graph : d -> E -> S
-  std::map<std::pair<int, int>, double> D;    // (traj index i, traj index j) -> s_ij
-
-  std::cout << "Aligning trajectories and compute their distances" << std::endl;
+// Generate Graph : d -> E -> S
+std::map<std::pair<int, int>, double> generateGraph(const std::vector<TrackTube>& trackTubes) {
+  std::map<std::pair<int, int>, double> D;
+  std::cout << "[Dump] Aligning trajectories and compute their distances" << std::endl;
   for(size_t traj_i = 0; traj_i < trackTubes.size(); traj_i++) {
     for(size_t traj_j = traj_i + 1; traj_j < trackTubes.size(); traj_j++) {
       
@@ -195,14 +186,43 @@ int main() {
       }
     }
   } // end of Graph generation
+  return D;
+}
 
-  // Spectral clustering : in pspectralclustering folder
-  std::cout << "Outputing distance matrix" << std::endl;
+int main(int argc, char** argv) {
+
+  std::string filepath = argv[1];
+
+  std::vector<TrackTube> trackTubes; 
+  std::vector<std::string> trajInStrings;
+
+  // Read and pack feature dump into TrackTubes(temporary container)
+  std::cout << "[Dump] Reading trajectories" << std::endl;
+  readFileIntoStrings("out.features", trajInStrings);
+  parseStringsToTrackTubes(trajInStrings, TRACK_LEN, trackTubes); 
+  std::cout << "[Dump] "<< trackTubes.size() << " trajectories in total" << std::endl;
+  
+  std::cout << "[Dump] Sorting trajectories by ending frame" << std::endl;
+  // Sort TrackTubes by ending frame for easy of graph construction
+  std::sort(
+    trackTubes.begin(), 
+    trackTubes.end(), 
+    [](const TrackTube &a, const TrackTube &b) {
+      return a.trackTubeInfo.endingFrame < b.trackTubeInfo.endingFrame;});
+
+  std::cout << "[Dump] Constructing graph" << std::endl;
+  // (traj index i, traj index j) -> s_ij
+  std::map<std::pair<int, int>, double> D = generateGraph(trackTubes);
+
+  // Output s_ij for spectral clustering
+  std::cout << "[Dump] Outputing distance matrix" << std::endl;
   printDistanceMatrix("dij.txt", D, trackTubes.size());
 
-  std::cout << "Outputing sorted trajectories" << std::endl;
+  std::cout << "[Dump] Outputing sorted trajectories" << std::endl;
   // dump trajectory -> trj_id ending frame, scale, points
-  printSortedTrajectories("sortedTrajectories.txt", trackTubes);
+  dumpSortedTrajectories(filepath + "sortedTrajectories.out", trackTubes);
 
 return 0;  
 }
+/*
+  */
