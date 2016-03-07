@@ -37,6 +37,7 @@ void protobuf_AssignDesc_dump_2eproto();
 void protobuf_ShutdownFile_dump_2eproto();
 
 class Trajectory;
+class TrajectoryList;
 class VideoInstance;
 class VideoList;
 
@@ -98,10 +99,16 @@ class Trajectory : public ::google::protobuf::Message {
 
   // accessors -------------------------------------------------------
 
-  // repeated float normalizedPoints = 1;
+  // optional int32 trackId = 1;
+  void clear_trackid();
+  static const int kTrackIdFieldNumber = 1;
+  ::google::protobuf::int32 trackid() const;
+  void set_trackid(::google::protobuf::int32 value);
+
+  // repeated float normalizedPoints = 2;
   int normalizedpoints_size() const;
   void clear_normalizedpoints();
-  static const int kNormalizedPointsFieldNumber = 1;
+  static const int kNormalizedPointsFieldNumber = 2;
   float normalizedpoints(int index) const;
   void set_normalizedpoints(int index, float value);
   void add_normalizedpoints(float value);
@@ -110,6 +117,54 @@ class Trajectory : public ::google::protobuf::Message {
   ::google::protobuf::RepeatedField< float >*
       mutable_normalizedpoints();
 
+  // repeated float hog = 3;
+  int hog_size() const;
+  void clear_hog();
+  static const int kHogFieldNumber = 3;
+  float hog(int index) const;
+  void set_hog(int index, float value);
+  void add_hog(float value);
+  const ::google::protobuf::RepeatedField< float >&
+      hog() const;
+  ::google::protobuf::RepeatedField< float >*
+      mutable_hog();
+
+  // repeated float hof = 4;
+  int hof_size() const;
+  void clear_hof();
+  static const int kHofFieldNumber = 4;
+  float hof(int index) const;
+  void set_hof(int index, float value);
+  void add_hof(float value);
+  const ::google::protobuf::RepeatedField< float >&
+      hof() const;
+  ::google::protobuf::RepeatedField< float >*
+      mutable_hof();
+
+  // repeated float mbhX = 5;
+  int mbhx_size() const;
+  void clear_mbhx();
+  static const int kMbhXFieldNumber = 5;
+  float mbhx(int index) const;
+  void set_mbhx(int index, float value);
+  void add_mbhx(float value);
+  const ::google::protobuf::RepeatedField< float >&
+      mbhx() const;
+  ::google::protobuf::RepeatedField< float >*
+      mutable_mbhx();
+
+  // repeated float mbhY = 6;
+  int mbhy_size() const;
+  void clear_mbhy();
+  static const int kMbhYFieldNumber = 6;
+  float mbhy(int index) const;
+  void set_mbhy(int index, float value);
+  void add_mbhy(float value);
+  const ::google::protobuf::RepeatedField< float >&
+      mbhy() const;
+  ::google::protobuf::RepeatedField< float >*
+      mutable_mbhy();
+
   // @@protoc_insertion_point(class_scope:motionClustering.Trajectory)
  private:
 
@@ -117,6 +172,15 @@ class Trajectory : public ::google::protobuf::Message {
   bool _is_default_instance_;
   ::google::protobuf::RepeatedField< float > normalizedpoints_;
   mutable int _normalizedpoints_cached_byte_size_;
+  ::google::protobuf::RepeatedField< float > hog_;
+  mutable int _hog_cached_byte_size_;
+  ::google::protobuf::RepeatedField< float > hof_;
+  mutable int _hof_cached_byte_size_;
+  ::google::protobuf::RepeatedField< float > mbhx_;
+  mutable int _mbhx_cached_byte_size_;
+  ::google::protobuf::RepeatedField< float > mbhy_;
+  mutable int _mbhy_cached_byte_size_;
+  ::google::protobuf::int32 trackid_;
   mutable int _cached_size_;
   friend void  protobuf_AddDesc_dump_2eproto();
   friend void protobuf_AssignDesc_dump_2eproto();
@@ -124,6 +188,90 @@ class Trajectory : public ::google::protobuf::Message {
 
   void InitAsDefaultInstance();
   static Trajectory* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class TrajectoryList : public ::google::protobuf::Message {
+ public:
+  TrajectoryList();
+  virtual ~TrajectoryList();
+
+  TrajectoryList(const TrajectoryList& from);
+
+  inline TrajectoryList& operator=(const TrajectoryList& from) {
+    CopyFrom(from);
+    return *this;
+  }
+
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const TrajectoryList& default_instance();
+
+  void Swap(TrajectoryList* other);
+
+  // implements Message ----------------------------------------------
+
+  inline TrajectoryList* New() const { return New(NULL); }
+
+  TrajectoryList* New(::google::protobuf::Arena* arena) const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const TrajectoryList& from);
+  void MergeFrom(const TrajectoryList& from);
+  void Clear();
+  bool IsInitialized() const;
+
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const;
+  void InternalSwap(TrajectoryList* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return _internal_metadata_.arena();
+  }
+  inline void* MaybeArenaPtr() const {
+    return _internal_metadata_.raw_arena_ptr();
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // repeated .motionClustering.Trajectory tracks = 1;
+  int tracks_size() const;
+  void clear_tracks();
+  static const int kTracksFieldNumber = 1;
+  const ::motionClustering::Trajectory& tracks(int index) const;
+  ::motionClustering::Trajectory* mutable_tracks(int index);
+  ::motionClustering::Trajectory* add_tracks();
+  ::google::protobuf::RepeatedPtrField< ::motionClustering::Trajectory >*
+      mutable_tracks();
+  const ::google::protobuf::RepeatedPtrField< ::motionClustering::Trajectory >&
+      tracks() const;
+
+  // @@protoc_insertion_point(class_scope:motionClustering.TrajectoryList)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  bool _is_default_instance_;
+  ::google::protobuf::RepeatedPtrField< ::motionClustering::Trajectory > tracks_;
+  mutable int _cached_size_;
+  friend void  protobuf_AddDesc_dump_2eproto();
+  friend void protobuf_AssignDesc_dump_2eproto();
+  friend void protobuf_ShutdownFile_dump_2eproto();
+
+  void InitAsDefaultInstance();
+  static TrajectoryList* default_instance_;
 };
 // -------------------------------------------------------------------
 
@@ -206,10 +354,10 @@ class VideoInstance : public ::google::protobuf::Message {
   ::google::protobuf::int32 numclusters() const;
   void set_numclusters(::google::protobuf::int32 value);
 
-  // repeated .motionClustering.Trajectory tracks = 5;
+  // repeated .motionClustering.Trajectory tracks = 4;
   int tracks_size() const;
   void clear_tracks();
-  static const int kTracksFieldNumber = 5;
+  static const int kTracksFieldNumber = 4;
   const ::motionClustering::Trajectory& tracks(int index) const;
   ::motionClustering::Trajectory* mutable_tracks(int index);
   ::motionClustering::Trajectory* add_tracks();
@@ -327,7 +475,21 @@ class VideoList : public ::google::protobuf::Message {
 #if !PROTOBUF_INLINE_NOT_IN_HEADERS
 // Trajectory
 
-// repeated float normalizedPoints = 1;
+// optional int32 trackId = 1;
+inline void Trajectory::clear_trackid() {
+  trackid_ = 0;
+}
+inline ::google::protobuf::int32 Trajectory::trackid() const {
+  // @@protoc_insertion_point(field_get:motionClustering.Trajectory.trackId)
+  return trackid_;
+}
+inline void Trajectory::set_trackid(::google::protobuf::int32 value) {
+  
+  trackid_ = value;
+  // @@protoc_insertion_point(field_set:motionClustering.Trajectory.trackId)
+}
+
+// repeated float normalizedPoints = 2;
 inline int Trajectory::normalizedpoints_size() const {
   return normalizedpoints_.size();
 }
@@ -355,6 +517,160 @@ inline ::google::protobuf::RepeatedField< float >*
 Trajectory::mutable_normalizedpoints() {
   // @@protoc_insertion_point(field_mutable_list:motionClustering.Trajectory.normalizedPoints)
   return &normalizedpoints_;
+}
+
+// repeated float hog = 3;
+inline int Trajectory::hog_size() const {
+  return hog_.size();
+}
+inline void Trajectory::clear_hog() {
+  hog_.Clear();
+}
+inline float Trajectory::hog(int index) const {
+  // @@protoc_insertion_point(field_get:motionClustering.Trajectory.hog)
+  return hog_.Get(index);
+}
+inline void Trajectory::set_hog(int index, float value) {
+  hog_.Set(index, value);
+  // @@protoc_insertion_point(field_set:motionClustering.Trajectory.hog)
+}
+inline void Trajectory::add_hog(float value) {
+  hog_.Add(value);
+  // @@protoc_insertion_point(field_add:motionClustering.Trajectory.hog)
+}
+inline const ::google::protobuf::RepeatedField< float >&
+Trajectory::hog() const {
+  // @@protoc_insertion_point(field_list:motionClustering.Trajectory.hog)
+  return hog_;
+}
+inline ::google::protobuf::RepeatedField< float >*
+Trajectory::mutable_hog() {
+  // @@protoc_insertion_point(field_mutable_list:motionClustering.Trajectory.hog)
+  return &hog_;
+}
+
+// repeated float hof = 4;
+inline int Trajectory::hof_size() const {
+  return hof_.size();
+}
+inline void Trajectory::clear_hof() {
+  hof_.Clear();
+}
+inline float Trajectory::hof(int index) const {
+  // @@protoc_insertion_point(field_get:motionClustering.Trajectory.hof)
+  return hof_.Get(index);
+}
+inline void Trajectory::set_hof(int index, float value) {
+  hof_.Set(index, value);
+  // @@protoc_insertion_point(field_set:motionClustering.Trajectory.hof)
+}
+inline void Trajectory::add_hof(float value) {
+  hof_.Add(value);
+  // @@protoc_insertion_point(field_add:motionClustering.Trajectory.hof)
+}
+inline const ::google::protobuf::RepeatedField< float >&
+Trajectory::hof() const {
+  // @@protoc_insertion_point(field_list:motionClustering.Trajectory.hof)
+  return hof_;
+}
+inline ::google::protobuf::RepeatedField< float >*
+Trajectory::mutable_hof() {
+  // @@protoc_insertion_point(field_mutable_list:motionClustering.Trajectory.hof)
+  return &hof_;
+}
+
+// repeated float mbhX = 5;
+inline int Trajectory::mbhx_size() const {
+  return mbhx_.size();
+}
+inline void Trajectory::clear_mbhx() {
+  mbhx_.Clear();
+}
+inline float Trajectory::mbhx(int index) const {
+  // @@protoc_insertion_point(field_get:motionClustering.Trajectory.mbhX)
+  return mbhx_.Get(index);
+}
+inline void Trajectory::set_mbhx(int index, float value) {
+  mbhx_.Set(index, value);
+  // @@protoc_insertion_point(field_set:motionClustering.Trajectory.mbhX)
+}
+inline void Trajectory::add_mbhx(float value) {
+  mbhx_.Add(value);
+  // @@protoc_insertion_point(field_add:motionClustering.Trajectory.mbhX)
+}
+inline const ::google::protobuf::RepeatedField< float >&
+Trajectory::mbhx() const {
+  // @@protoc_insertion_point(field_list:motionClustering.Trajectory.mbhX)
+  return mbhx_;
+}
+inline ::google::protobuf::RepeatedField< float >*
+Trajectory::mutable_mbhx() {
+  // @@protoc_insertion_point(field_mutable_list:motionClustering.Trajectory.mbhX)
+  return &mbhx_;
+}
+
+// repeated float mbhY = 6;
+inline int Trajectory::mbhy_size() const {
+  return mbhy_.size();
+}
+inline void Trajectory::clear_mbhy() {
+  mbhy_.Clear();
+}
+inline float Trajectory::mbhy(int index) const {
+  // @@protoc_insertion_point(field_get:motionClustering.Trajectory.mbhY)
+  return mbhy_.Get(index);
+}
+inline void Trajectory::set_mbhy(int index, float value) {
+  mbhy_.Set(index, value);
+  // @@protoc_insertion_point(field_set:motionClustering.Trajectory.mbhY)
+}
+inline void Trajectory::add_mbhy(float value) {
+  mbhy_.Add(value);
+  // @@protoc_insertion_point(field_add:motionClustering.Trajectory.mbhY)
+}
+inline const ::google::protobuf::RepeatedField< float >&
+Trajectory::mbhy() const {
+  // @@protoc_insertion_point(field_list:motionClustering.Trajectory.mbhY)
+  return mbhy_;
+}
+inline ::google::protobuf::RepeatedField< float >*
+Trajectory::mutable_mbhy() {
+  // @@protoc_insertion_point(field_mutable_list:motionClustering.Trajectory.mbhY)
+  return &mbhy_;
+}
+
+// -------------------------------------------------------------------
+
+// TrajectoryList
+
+// repeated .motionClustering.Trajectory tracks = 1;
+inline int TrajectoryList::tracks_size() const {
+  return tracks_.size();
+}
+inline void TrajectoryList::clear_tracks() {
+  tracks_.Clear();
+}
+inline const ::motionClustering::Trajectory& TrajectoryList::tracks(int index) const {
+  // @@protoc_insertion_point(field_get:motionClustering.TrajectoryList.tracks)
+  return tracks_.Get(index);
+}
+inline ::motionClustering::Trajectory* TrajectoryList::mutable_tracks(int index) {
+  // @@protoc_insertion_point(field_mutable:motionClustering.TrajectoryList.tracks)
+  return tracks_.Mutable(index);
+}
+inline ::motionClustering::Trajectory* TrajectoryList::add_tracks() {
+  // @@protoc_insertion_point(field_add:motionClustering.TrajectoryList.tracks)
+  return tracks_.Add();
+}
+inline ::google::protobuf::RepeatedPtrField< ::motionClustering::Trajectory >*
+TrajectoryList::mutable_tracks() {
+  // @@protoc_insertion_point(field_mutable_list:motionClustering.TrajectoryList.tracks)
+  return &tracks_;
+}
+inline const ::google::protobuf::RepeatedPtrField< ::motionClustering::Trajectory >&
+TrajectoryList::tracks() const {
+  // @@protoc_insertion_point(field_list:motionClustering.TrajectoryList.tracks)
+  return tracks_;
 }
 
 // -------------------------------------------------------------------
@@ -432,7 +748,7 @@ inline void VideoInstance::set_numclusters(::google::protobuf::int32 value) {
   // @@protoc_insertion_point(field_set:motionClustering.VideoInstance.numClusters)
 }
 
-// repeated .motionClustering.Trajectory tracks = 5;
+// repeated .motionClustering.Trajectory tracks = 4;
 inline int VideoInstance::tracks_size() const {
   return tracks_.size();
 }
@@ -497,6 +813,8 @@ VideoList::videos() const {
 }
 
 #endif  // !PROTOBUF_INLINE_NOT_IN_HEADERS
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

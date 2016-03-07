@@ -3,8 +3,8 @@
 # Compute codebook
 # Do RBF-SVM
 
-NUM_CLUSTERS=2
-PARAM_R=90
+NUM_CLUSTERS=1
+PARAM_R=50
 
 # Output path
 OUT_PATH="ClusteredTrajectories/r="
@@ -16,19 +16,20 @@ OUT_PATH+="/"
 #make showTrajectories
 #./showTrajectories
 
-make ConstructCodebook
 START_TIME=$(date +%s)
+make ConstructCodebook
+
+rm $OUT_PATH"TrainingSet.data"
+rm $OUT_PATH"TestingSet.data"
+
 ./ConstructCodebook $OUT_PATH
 END_TIME=$(date +%s)
 EXECUTION_TIME=$(($END_TIME - $START_TIME))
 echo "Execution time: $EXECUTION_TIME seconds"
 
-for fold in 0 1 2 3 4
-do
-	../libsvm-3/svm-scale -l 0 -u 1 $OUT_PATH"TrainingSet"$fold".data"
-	../libsvm-3/svm-scale -l 0 -u 1 $OUT_PATH"ValidationSet"$fold".data"
+python ../libsvm-3.21/tools/grid.py -log2c -5,5,1 -log2g -5,5,1 -v 5 $OUT_PATH"TrainingSet.data"
+
+#../libsvm-3/svm-scale -l 0 -u 1 $OUT_PATH"TrainingSet.data"
 	# g:5~0.5
-	../libsvm-3.21/svm-train -s 0 -c 250 -t 2 -g 5 -e 0.001 $OUT_PATH"TrainingSet"$fold".data"
-	../libsvm-3.21/svm-predict $OUT_PATH"ValidationSet"$fold".data" "TrainingSet"$fold".data.model" $OUT_PATH"result"$fold".txt"	
-	#../libsvm-3.21/svm-predict  $OUT_PATH"TestingSet.data" "TrainingSet"$fold".data.model" $OUT_PATH"result"$fold".txt"	
-done
+#../libsvm-3.21/svm-train -s 0 -c 250 -t 2 -g 5 -e 0.001 $OUT_PATH"TrainingSet.data" $OUT_PATH"svm.model"
+#../libsvm-3.21/svm-predict $OUT_PATH"TestingSet.data" $OUT_PATH"svm.model" $OUT_PATH"result.txt"	

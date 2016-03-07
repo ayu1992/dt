@@ -5,6 +5,10 @@
 #include <string>
 #include <algorithm>
 #include "dump.pb.h"
+#include <fcntl.h>
+#include <unistd.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
+#include <google/protobuf/io/coded_stream.h>
 #include "ParserHelpers.h"
 
 /**
@@ -28,17 +32,23 @@ void extractTrajectoriesOfLargestCluster(const std::string& filename, const std:
 		// If this trajectory belongs to the largest cluster, dump it!
 		if (largestClusterId == clusterId.find(static_cast<int>(val[0]))->second) {
 			motionClustering::Trajectory* newTrajectory = video->add_tracks();
-			/*
-			This code is fine as is. If you're interested in std::copy, you can do this instead:
-			#include <google/protobuf/repeated_field.h>
-			...
-			std::copy(val.begin() + 6, val.end(),
-			          google::protobuf::RepeatedFieldBackInserter(newTrajectory->mutable_normalized_points()));
-			*/
-			for(auto val_it = val.begin() + 6; val_it != val.end(); ++val_it) {		// refactor with std::copy?
-				newTrajectory->add_normalizedpoints(*val_it);
-			}
+			auto val_from = val.begin() + 6;
+			auto val_to = val_from + TRACK_LEN * 2;
+			std::copy(val_from, val_to, google::protobuf::RepeatedFieldBackInserter(newTrajectory->mutable_normalizedpoints()));
+			val_from = val_to;
+			val_to += HOG_DIM;
+			std::copy(val_from, val_to, google::protobuf::RepeatedFieldBackInserter(newTrajectory->mutable_hog()));
+			val_from = val_to;
+			val_to += HOF_DIM;
+			std::copy(val_from, val_to, google::protobuf::RepeatedFieldBackInserter(newTrajectory->mutable_hof()));
+			val_from = val_to;
+			val_to += MBHX_DIM;
+			std::copy(val_from, val_to, google::protobuf::RepeatedFieldBackInserter(newTrajectory->mutable_mbhx()));
+			val_from = val_to;
+			val_to += MBHY_DIM;
+			std::copy(val_from, val_to, google::protobuf::RepeatedFieldBackInserter(newTrajectory->mutable_mbhy()));
 		}
+
 		numLines++;
 	}
 	std::cout << "There are a total of " << numLines << "tracks after pspectral" << std::endl;
@@ -48,22 +58,22 @@ int main(int argc, char** argv) { // argv format: output path, actionLabel, vide
 	// trj -> cid
 	std::unordered_map<int, int> clusterId;
 
-	// trajectory id -> vector<Point2f>, scales, frames
-	const std::string trjFilename = "sortedTrajectories.txt";			// contains A video
-
 	std::string outpath = argv[1];
-	outpath += "TrajectoryDump.data";
+	// trajectory id -> vector<Point2f>, scales, frames
+	const std::string trjFilename = outpath + "sortedTrajectories.out";			// contains A video
 
 	// Read result.txt	
-	readClusterId("result.txt", clusterId);
+	readClusterId(outpath + "result.txt", clusterId);
+	std::cout << "cid size : " << clusterId.size() << std::endl;
 
+	outpath += "TrajectoryDump.data";
 	// TODO: How about std::atoi instead of istringstream?
 	// Parse and get video information
 	int videoIndex, numClusters;
 	std::istringstream getVideoIndex(argv[3]);
-  getVideoIndex >> videoIndex;
-  std::istringstream getNumClusters(argv[4]);
-  getNumClusters >> numClusters;
+	getVideoIndex >> videoIndex;
+	std::istringstream getNumClusters(argv[4]);
+	getNumClusters >> numClusters;
 
 	// Identify the biggest cluster (cid)	
 	std::vector<int> clusterSizes(numClusters, 0);
@@ -77,22 +87,22 @@ int main(int argc, char** argv) { // argv format: output path, actionLabel, vide
 	int largestClusterId = std::distance(clusterSizes.begin(), maxElemIter);
 
 	std::cout << "Largest cluster id: " << largestClusterId << std::endl;
-	// Construct proto information : action label, video id (UCF ordering), number of clusters run on pspectral, number of trajs, 
-	// if this video contains more than 0 trajectories, extract largest cluster and write
-	// else skip this video
 
 	motionClustering::VideoList videos;
-	{
-	  // Read the existing trajectory dump
-	  std::fstream input( outpath, std::ios::in | std::ios::binary);
-	  if (!input) {
-	    std::cout << ": File not found.  Creating a new file." << std::endl;
-	  } else if (!videos.ParseFromIstream(&input)) {
-	    std::cerr << "Failed to parse videos." << std::endl;
-	    return -1;
-	  }
-  }
 
+	int input = open(outpath.c_str(), O_RDONLY);
+
+	if (!input) {
+	    std::cout << ": File not found.  Creating a new file later." << std::endl;
+	} else {
+		google::protobuf::io::ZeroCopyInputStream* infile = new google::protobuf::io::FileInputStream(input);
+		google::protobuf::io::CodedInputStream* coded_input = new google::protobuf::io::CodedInputStream(infile);
+		coded_input->SetTotalBytesLimit(400 << 20, 200 << 20);
+		if (!videos.ParseFromCodedStream(coded_input)) {
+			std::cerr << "Failed to parse videos QQ" << std::endl;
+			return -1;
+		}
+	}
 
 	motionClustering::VideoInstance* this_video = videos.add_videos();
 
@@ -102,10 +112,11 @@ int main(int argc, char** argv) { // argv format: output path, actionLabel, vide
 
 	// Read sortedTrajectories.txt
 	// If the traj belongs to cid, add to proto
-  extractTrajectoriesOfLargestCluster(trjFilename, clusterId, largestClusterId, this_video);
-  std::cout << "The dominant cluster contains " << clusterSizes[largestClusterId] << " tracks" << std::endl;
+  	extractTrajectoriesOfLargestCluster(trjFilename, clusterId, largestClusterId, this_video);
+  	std::cout << "The dominant cluster contains " << clusterSizes[largestClusterId] << " tracks" << std::endl;
   
-  std::cout << "So " << this_video->tracks_size() << " tracks will be written to output" << std::endl;
+ 	std::cout << "So " << this_video->tracks_size() << " tracks will be written to output" << std::endl;
+		
 	// Dump the proto
 	std::fstream output( outpath, std::ios::out | std::ios::trunc | std::ios::binary);
 	if (!videos.SerializeToOstream(&output)) {
@@ -113,6 +124,6 @@ int main(int argc, char** argv) { // argv format: output path, actionLabel, vide
 	   return -1;
 	}
 
-  google::protobuf::ShutdownProtobufLibrary();
+  	google::protobuf::ShutdownProtobufLibrary();
 	return 0;
 }

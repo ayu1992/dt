@@ -24,6 +24,9 @@ namespace {
 const ::google::protobuf::Descriptor* Trajectory_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   Trajectory_reflection_ = NULL;
+const ::google::protobuf::Descriptor* TrajectoryList_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  TrajectoryList_reflection_ = NULL;
 const ::google::protobuf::Descriptor* VideoInstance_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   VideoInstance_reflection_ = NULL;
@@ -41,8 +44,13 @@ void protobuf_AssignDesc_dump_2eproto() {
       "dump.proto");
   GOOGLE_CHECK(file != NULL);
   Trajectory_descriptor_ = file->message_type(0);
-  static const int Trajectory_offsets_[1] = {
+  static const int Trajectory_offsets_[6] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Trajectory, trackid_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Trajectory, normalizedpoints_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Trajectory, hog_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Trajectory, hof_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Trajectory, mbhx_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Trajectory, mbhy_),
   };
   Trajectory_reflection_ =
     ::google::protobuf::internal::GeneratedMessageReflection::NewGeneratedMessageReflection(
@@ -55,7 +63,22 @@ void protobuf_AssignDesc_dump_2eproto() {
       sizeof(Trajectory),
       GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Trajectory, _internal_metadata_),
       GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Trajectory, _is_default_instance_));
-  VideoInstance_descriptor_ = file->message_type(1);
+  TrajectoryList_descriptor_ = file->message_type(1);
+  static const int TrajectoryList_offsets_[1] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TrajectoryList, tracks_),
+  };
+  TrajectoryList_reflection_ =
+    ::google::protobuf::internal::GeneratedMessageReflection::NewGeneratedMessageReflection(
+      TrajectoryList_descriptor_,
+      TrajectoryList::default_instance_,
+      TrajectoryList_offsets_,
+      -1,
+      -1,
+      -1,
+      sizeof(TrajectoryList),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TrajectoryList, _internal_metadata_),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TrajectoryList, _is_default_instance_));
+  VideoInstance_descriptor_ = file->message_type(2);
   static const int VideoInstance_offsets_[4] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VideoInstance, actionlabel_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VideoInstance, videoindex_),
@@ -73,7 +96,7 @@ void protobuf_AssignDesc_dump_2eproto() {
       sizeof(VideoInstance),
       GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VideoInstance, _internal_metadata_),
       GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VideoInstance, _is_default_instance_));
-  VideoList_descriptor_ = file->message_type(2);
+  VideoList_descriptor_ = file->message_type(3);
   static const int VideoList_offsets_[1] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(VideoList, videos_),
   };
@@ -103,6 +126,8 @@ void protobuf_RegisterTypes(const ::std::string&) {
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
       Trajectory_descriptor_, &Trajectory::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+      TrajectoryList_descriptor_, &TrajectoryList::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
       VideoInstance_descriptor_, &VideoInstance::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
       VideoList_descriptor_, &VideoList::default_instance());
@@ -113,6 +138,8 @@ void protobuf_RegisterTypes(const ::std::string&) {
 void protobuf_ShutdownFile_dump_2eproto() {
   delete Trajectory::default_instance_;
   delete Trajectory_reflection_;
+  delete TrajectoryList::default_instance_;
+  delete TrajectoryList_reflection_;
   delete VideoInstance::default_instance_;
   delete VideoInstance_reflection_;
   delete VideoList::default_instance_;
@@ -126,19 +153,24 @@ void protobuf_AddDesc_dump_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-    "\n\ndump.proto\022\020motionClustering\"&\n\nTrajec"
-    "tory\022\030\n\020normalizedPoints\030\001 \003(\002\"{\n\rVideoI"
-    "nstance\022\023\n\013actionLabel\030\001 \001(\t\022\022\n\nvideoInd"
-    "ex\030\002 \001(\005\022\023\n\013numClusters\030\003 \001(\005\022,\n\006tracks\030"
-    "\005 \003(\0132\034.motionClustering.Trajectory\"<\n\tV"
-    "ideoList\022/\n\006videos\030\001 \003(\0132\037.motionCluster"
-    "ing.VideoInstanceb\006proto3", 265);
+    "\n\ndump.proto\022\020motionClustering\"m\n\nTrajec"
+    "tory\022\017\n\007trackId\030\001 \001(\005\022\030\n\020normalizedPoint"
+    "s\030\002 \003(\002\022\013\n\003hog\030\003 \003(\002\022\013\n\003hof\030\004 \003(\002\022\014\n\004mbh"
+    "X\030\005 \003(\002\022\014\n\004mbhY\030\006 \003(\002\">\n\016TrajectoryList\022"
+    ",\n\006tracks\030\001 \003(\0132\034.motionClustering.Traje"
+    "ctory\"{\n\rVideoInstance\022\023\n\013actionLabel\030\001 "
+    "\001(\t\022\022\n\nvideoIndex\030\002 \001(\005\022\023\n\013numClusters\030\003"
+    " \001(\005\022,\n\006tracks\030\004 \003(\0132\034.motionClustering."
+    "Trajectory\"<\n\tVideoList\022/\n\006videos\030\001 \003(\0132"
+    "\037.motionClustering.VideoInstanceb\006proto3", 400);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "dump.proto", &protobuf_RegisterTypes);
   Trajectory::default_instance_ = new Trajectory();
+  TrajectoryList::default_instance_ = new TrajectoryList();
   VideoInstance::default_instance_ = new VideoInstance();
   VideoList::default_instance_ = new VideoList();
   Trajectory::default_instance_->InitAsDefaultInstance();
+  TrajectoryList::default_instance_->InitAsDefaultInstance();
   VideoInstance::default_instance_->InitAsDefaultInstance();
   VideoList::default_instance_->InitAsDefaultInstance();
   ::google::protobuf::internal::OnShutdown(&protobuf_ShutdownFile_dump_2eproto);
@@ -164,7 +196,12 @@ static void MergeFromFail(int line) {
 // ===================================================================
 
 #if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int Trajectory::kTrackIdFieldNumber;
 const int Trajectory::kNormalizedPointsFieldNumber;
+const int Trajectory::kHogFieldNumber;
+const int Trajectory::kHofFieldNumber;
+const int Trajectory::kMbhXFieldNumber;
+const int Trajectory::kMbhYFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 Trajectory::Trajectory()
@@ -188,6 +225,7 @@ Trajectory::Trajectory(const Trajectory& from)
 void Trajectory::SharedCtor() {
     _is_default_instance_ = false;
   _cached_size_ = 0;
+  trackid_ = 0;
 }
 
 Trajectory::~Trajectory() {
@@ -226,7 +264,12 @@ Trajectory* Trajectory::New(::google::protobuf::Arena* arena) const {
 }
 
 void Trajectory::Clear() {
+  trackid_ = 0;
   normalizedpoints_.Clear();
+  hog_.Clear();
+  hof_.Clear();
+  mbhx_.Clear();
+  mbhy_.Clear();
 }
 
 bool Trajectory::MergePartialFromCodedStream(
@@ -239,16 +282,103 @@ bool Trajectory::MergePartialFromCodedStream(
     tag = p.first;
     if (!p.second) goto handle_unusual;
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
-      // repeated float normalizedPoints = 1;
+      // optional int32 trackId = 1;
       case 1: {
-        if (tag == 10) {
+        if (tag == 8) {
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &trackid_)));
+
+        } else {
+          goto handle_unusual;
+        }
+        if (input->ExpectTag(18)) goto parse_normalizedPoints;
+        break;
+      }
+
+      // repeated float normalizedPoints = 2;
+      case 2: {
+        if (tag == 18) {
+         parse_normalizedPoints:
           DO_((::google::protobuf::internal::WireFormatLite::ReadPackedPrimitive<
                    float, ::google::protobuf::internal::WireFormatLite::TYPE_FLOAT>(
                  input, this->mutable_normalizedpoints())));
-        } else if (tag == 13) {
+        } else if (tag == 21) {
           DO_((::google::protobuf::internal::WireFormatLite::ReadRepeatedPrimitiveNoInline<
                    float, ::google::protobuf::internal::WireFormatLite::TYPE_FLOAT>(
-                 1, 10, input, this->mutable_normalizedpoints())));
+                 1, 18, input, this->mutable_normalizedpoints())));
+        } else {
+          goto handle_unusual;
+        }
+        if (input->ExpectTag(26)) goto parse_hog;
+        break;
+      }
+
+      // repeated float hog = 3;
+      case 3: {
+        if (tag == 26) {
+         parse_hog:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPackedPrimitive<
+                   float, ::google::protobuf::internal::WireFormatLite::TYPE_FLOAT>(
+                 input, this->mutable_hog())));
+        } else if (tag == 29) {
+          DO_((::google::protobuf::internal::WireFormatLite::ReadRepeatedPrimitiveNoInline<
+                   float, ::google::protobuf::internal::WireFormatLite::TYPE_FLOAT>(
+                 1, 26, input, this->mutable_hog())));
+        } else {
+          goto handle_unusual;
+        }
+        if (input->ExpectTag(34)) goto parse_hof;
+        break;
+      }
+
+      // repeated float hof = 4;
+      case 4: {
+        if (tag == 34) {
+         parse_hof:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPackedPrimitive<
+                   float, ::google::protobuf::internal::WireFormatLite::TYPE_FLOAT>(
+                 input, this->mutable_hof())));
+        } else if (tag == 37) {
+          DO_((::google::protobuf::internal::WireFormatLite::ReadRepeatedPrimitiveNoInline<
+                   float, ::google::protobuf::internal::WireFormatLite::TYPE_FLOAT>(
+                 1, 34, input, this->mutable_hof())));
+        } else {
+          goto handle_unusual;
+        }
+        if (input->ExpectTag(42)) goto parse_mbhX;
+        break;
+      }
+
+      // repeated float mbhX = 5;
+      case 5: {
+        if (tag == 42) {
+         parse_mbhX:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPackedPrimitive<
+                   float, ::google::protobuf::internal::WireFormatLite::TYPE_FLOAT>(
+                 input, this->mutable_mbhx())));
+        } else if (tag == 45) {
+          DO_((::google::protobuf::internal::WireFormatLite::ReadRepeatedPrimitiveNoInline<
+                   float, ::google::protobuf::internal::WireFormatLite::TYPE_FLOAT>(
+                 1, 42, input, this->mutable_mbhx())));
+        } else {
+          goto handle_unusual;
+        }
+        if (input->ExpectTag(50)) goto parse_mbhY;
+        break;
+      }
+
+      // repeated float mbhY = 6;
+      case 6: {
+        if (tag == 50) {
+         parse_mbhY:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPackedPrimitive<
+                   float, ::google::protobuf::internal::WireFormatLite::TYPE_FLOAT>(
+                 input, this->mutable_mbhy())));
+        } else if (tag == 53) {
+          DO_((::google::protobuf::internal::WireFormatLite::ReadRepeatedPrimitiveNoInline<
+                   float, ::google::protobuf::internal::WireFormatLite::TYPE_FLOAT>(
+                 1, 50, input, this->mutable_mbhy())));
         } else {
           goto handle_unusual;
         }
@@ -280,14 +410,59 @@ failure:
 void Trajectory::SerializeWithCachedSizes(
     ::google::protobuf::io::CodedOutputStream* output) const {
   // @@protoc_insertion_point(serialize_start:motionClustering.Trajectory)
-  // repeated float normalizedPoints = 1;
+  // optional int32 trackId = 1;
+  if (this->trackid() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(1, this->trackid(), output);
+  }
+
+  // repeated float normalizedPoints = 2;
   if (this->normalizedpoints_size() > 0) {
-    ::google::protobuf::internal::WireFormatLite::WriteTag(1, ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED, output);
+    ::google::protobuf::internal::WireFormatLite::WriteTag(2, ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED, output);
     output->WriteVarint32(_normalizedpoints_cached_byte_size_);
   }
   for (int i = 0; i < this->normalizedpoints_size(); i++) {
     ::google::protobuf::internal::WireFormatLite::WriteFloatNoTag(
       this->normalizedpoints(i), output);
+  }
+
+  // repeated float hog = 3;
+  if (this->hog_size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteTag(3, ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED, output);
+    output->WriteVarint32(_hog_cached_byte_size_);
+  }
+  for (int i = 0; i < this->hog_size(); i++) {
+    ::google::protobuf::internal::WireFormatLite::WriteFloatNoTag(
+      this->hog(i), output);
+  }
+
+  // repeated float hof = 4;
+  if (this->hof_size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteTag(4, ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED, output);
+    output->WriteVarint32(_hof_cached_byte_size_);
+  }
+  for (int i = 0; i < this->hof_size(); i++) {
+    ::google::protobuf::internal::WireFormatLite::WriteFloatNoTag(
+      this->hof(i), output);
+  }
+
+  // repeated float mbhX = 5;
+  if (this->mbhx_size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteTag(5, ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED, output);
+    output->WriteVarint32(_mbhx_cached_byte_size_);
+  }
+  for (int i = 0; i < this->mbhx_size(); i++) {
+    ::google::protobuf::internal::WireFormatLite::WriteFloatNoTag(
+      this->mbhx(i), output);
+  }
+
+  // repeated float mbhY = 6;
+  if (this->mbhy_size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteTag(6, ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED, output);
+    output->WriteVarint32(_mbhy_cached_byte_size_);
+  }
+  for (int i = 0; i < this->mbhy_size(); i++) {
+    ::google::protobuf::internal::WireFormatLite::WriteFloatNoTag(
+      this->mbhy(i), output);
   }
 
   // @@protoc_insertion_point(serialize_end:motionClustering.Trajectory)
@@ -296,10 +471,15 @@ void Trajectory::SerializeWithCachedSizes(
 ::google::protobuf::uint8* Trajectory::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
   // @@protoc_insertion_point(serialize_to_array_start:motionClustering.Trajectory)
-  // repeated float normalizedPoints = 1;
+  // optional int32 trackId = 1;
+  if (this->trackid() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(1, this->trackid(), target);
+  }
+
+  // repeated float normalizedPoints = 2;
   if (this->normalizedpoints_size() > 0) {
     target = ::google::protobuf::internal::WireFormatLite::WriteTagToArray(
-      1,
+      2,
       ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED,
       target);
     target = ::google::protobuf::io::CodedOutputStream::WriteVarint32ToArray(
@@ -310,6 +490,62 @@ void Trajectory::SerializeWithCachedSizes(
       WriteFloatNoTagToArray(this->normalizedpoints(i), target);
   }
 
+  // repeated float hog = 3;
+  if (this->hog_size() > 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteTagToArray(
+      3,
+      ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED,
+      target);
+    target = ::google::protobuf::io::CodedOutputStream::WriteVarint32ToArray(
+      _hog_cached_byte_size_, target);
+  }
+  for (int i = 0; i < this->hog_size(); i++) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteFloatNoTagToArray(this->hog(i), target);
+  }
+
+  // repeated float hof = 4;
+  if (this->hof_size() > 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteTagToArray(
+      4,
+      ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED,
+      target);
+    target = ::google::protobuf::io::CodedOutputStream::WriteVarint32ToArray(
+      _hof_cached_byte_size_, target);
+  }
+  for (int i = 0; i < this->hof_size(); i++) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteFloatNoTagToArray(this->hof(i), target);
+  }
+
+  // repeated float mbhX = 5;
+  if (this->mbhx_size() > 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteTagToArray(
+      5,
+      ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED,
+      target);
+    target = ::google::protobuf::io::CodedOutputStream::WriteVarint32ToArray(
+      _mbhx_cached_byte_size_, target);
+  }
+  for (int i = 0; i < this->mbhx_size(); i++) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteFloatNoTagToArray(this->mbhx(i), target);
+  }
+
+  // repeated float mbhY = 6;
+  if (this->mbhy_size() > 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteTagToArray(
+      6,
+      ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED,
+      target);
+    target = ::google::protobuf::io::CodedOutputStream::WriteVarint32ToArray(
+      _mbhy_cached_byte_size_, target);
+  }
+  for (int i = 0; i < this->mbhy_size(); i++) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteFloatNoTagToArray(this->mbhy(i), target);
+  }
+
   // @@protoc_insertion_point(serialize_to_array_end:motionClustering.Trajectory)
   return target;
 }
@@ -317,7 +553,14 @@ void Trajectory::SerializeWithCachedSizes(
 int Trajectory::ByteSize() const {
   int total_size = 0;
 
-  // repeated float normalizedPoints = 1;
+  // optional int32 trackId = 1;
+  if (this->trackid() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::Int32Size(
+        this->trackid());
+  }
+
+  // repeated float normalizedPoints = 2;
   {
     int data_size = 0;
     data_size = 4 * this->normalizedpoints_size();
@@ -327,6 +570,62 @@ int Trajectory::ByteSize() const {
     }
     GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
     _normalizedpoints_cached_byte_size_ = data_size;
+    GOOGLE_SAFE_CONCURRENT_WRITES_END();
+    total_size += data_size;
+  }
+
+  // repeated float hog = 3;
+  {
+    int data_size = 0;
+    data_size = 4 * this->hog_size();
+    if (data_size > 0) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(data_size);
+    }
+    GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+    _hog_cached_byte_size_ = data_size;
+    GOOGLE_SAFE_CONCURRENT_WRITES_END();
+    total_size += data_size;
+  }
+
+  // repeated float hof = 4;
+  {
+    int data_size = 0;
+    data_size = 4 * this->hof_size();
+    if (data_size > 0) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(data_size);
+    }
+    GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+    _hof_cached_byte_size_ = data_size;
+    GOOGLE_SAFE_CONCURRENT_WRITES_END();
+    total_size += data_size;
+  }
+
+  // repeated float mbhX = 5;
+  {
+    int data_size = 0;
+    data_size = 4 * this->mbhx_size();
+    if (data_size > 0) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(data_size);
+    }
+    GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+    _mbhx_cached_byte_size_ = data_size;
+    GOOGLE_SAFE_CONCURRENT_WRITES_END();
+    total_size += data_size;
+  }
+
+  // repeated float mbhY = 6;
+  {
+    int data_size = 0;
+    data_size = 4 * this->mbhy_size();
+    if (data_size > 0) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(data_size);
+    }
+    GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+    _mbhy_cached_byte_size_ = data_size;
     GOOGLE_SAFE_CONCURRENT_WRITES_END();
     total_size += data_size;
   }
@@ -352,6 +651,13 @@ void Trajectory::MergeFrom(const ::google::protobuf::Message& from) {
 void Trajectory::MergeFrom(const Trajectory& from) {
   if (GOOGLE_PREDICT_FALSE(&from == this)) MergeFromFail(__LINE__);
   normalizedpoints_.MergeFrom(from.normalizedpoints_);
+  hog_.MergeFrom(from.hog_);
+  hof_.MergeFrom(from.hof_);
+  mbhx_.MergeFrom(from.mbhx_);
+  mbhy_.MergeFrom(from.mbhy_);
+  if (from.trackid() != 0) {
+    set_trackid(from.trackid());
+  }
 }
 
 void Trajectory::CopyFrom(const ::google::protobuf::Message& from) {
@@ -376,7 +682,12 @@ void Trajectory::Swap(Trajectory* other) {
   InternalSwap(other);
 }
 void Trajectory::InternalSwap(Trajectory* other) {
+  std::swap(trackid_, other->trackid_);
   normalizedpoints_.UnsafeArenaSwap(&other->normalizedpoints_);
+  hog_.UnsafeArenaSwap(&other->hog_);
+  hof_.UnsafeArenaSwap(&other->hof_);
+  mbhx_.UnsafeArenaSwap(&other->mbhx_);
+  mbhy_.UnsafeArenaSwap(&other->mbhy_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
   std::swap(_cached_size_, other->_cached_size_);
 }
@@ -392,7 +703,21 @@ void Trajectory::InternalSwap(Trajectory* other) {
 #if PROTOBUF_INLINE_NOT_IN_HEADERS
 // Trajectory
 
-// repeated float normalizedPoints = 1;
+// optional int32 trackId = 1;
+void Trajectory::clear_trackid() {
+  trackid_ = 0;
+}
+ ::google::protobuf::int32 Trajectory::trackid() const {
+  // @@protoc_insertion_point(field_get:motionClustering.Trajectory.trackId)
+  return trackid_;
+}
+ void Trajectory::set_trackid(::google::protobuf::int32 value) {
+  
+  trackid_ = value;
+  // @@protoc_insertion_point(field_set:motionClustering.Trajectory.trackId)
+}
+
+// repeated float normalizedPoints = 2;
 int Trajectory::normalizedpoints_size() const {
   return normalizedpoints_.size();
 }
@@ -420,6 +745,371 @@ Trajectory::normalizedpoints() const {
 Trajectory::mutable_normalizedpoints() {
   // @@protoc_insertion_point(field_mutable_list:motionClustering.Trajectory.normalizedPoints)
   return &normalizedpoints_;
+}
+
+// repeated float hog = 3;
+int Trajectory::hog_size() const {
+  return hog_.size();
+}
+void Trajectory::clear_hog() {
+  hog_.Clear();
+}
+ float Trajectory::hog(int index) const {
+  // @@protoc_insertion_point(field_get:motionClustering.Trajectory.hog)
+  return hog_.Get(index);
+}
+ void Trajectory::set_hog(int index, float value) {
+  hog_.Set(index, value);
+  // @@protoc_insertion_point(field_set:motionClustering.Trajectory.hog)
+}
+ void Trajectory::add_hog(float value) {
+  hog_.Add(value);
+  // @@protoc_insertion_point(field_add:motionClustering.Trajectory.hog)
+}
+ const ::google::protobuf::RepeatedField< float >&
+Trajectory::hog() const {
+  // @@protoc_insertion_point(field_list:motionClustering.Trajectory.hog)
+  return hog_;
+}
+ ::google::protobuf::RepeatedField< float >*
+Trajectory::mutable_hog() {
+  // @@protoc_insertion_point(field_mutable_list:motionClustering.Trajectory.hog)
+  return &hog_;
+}
+
+// repeated float hof = 4;
+int Trajectory::hof_size() const {
+  return hof_.size();
+}
+void Trajectory::clear_hof() {
+  hof_.Clear();
+}
+ float Trajectory::hof(int index) const {
+  // @@protoc_insertion_point(field_get:motionClustering.Trajectory.hof)
+  return hof_.Get(index);
+}
+ void Trajectory::set_hof(int index, float value) {
+  hof_.Set(index, value);
+  // @@protoc_insertion_point(field_set:motionClustering.Trajectory.hof)
+}
+ void Trajectory::add_hof(float value) {
+  hof_.Add(value);
+  // @@protoc_insertion_point(field_add:motionClustering.Trajectory.hof)
+}
+ const ::google::protobuf::RepeatedField< float >&
+Trajectory::hof() const {
+  // @@protoc_insertion_point(field_list:motionClustering.Trajectory.hof)
+  return hof_;
+}
+ ::google::protobuf::RepeatedField< float >*
+Trajectory::mutable_hof() {
+  // @@protoc_insertion_point(field_mutable_list:motionClustering.Trajectory.hof)
+  return &hof_;
+}
+
+// repeated float mbhX = 5;
+int Trajectory::mbhx_size() const {
+  return mbhx_.size();
+}
+void Trajectory::clear_mbhx() {
+  mbhx_.Clear();
+}
+ float Trajectory::mbhx(int index) const {
+  // @@protoc_insertion_point(field_get:motionClustering.Trajectory.mbhX)
+  return mbhx_.Get(index);
+}
+ void Trajectory::set_mbhx(int index, float value) {
+  mbhx_.Set(index, value);
+  // @@protoc_insertion_point(field_set:motionClustering.Trajectory.mbhX)
+}
+ void Trajectory::add_mbhx(float value) {
+  mbhx_.Add(value);
+  // @@protoc_insertion_point(field_add:motionClustering.Trajectory.mbhX)
+}
+ const ::google::protobuf::RepeatedField< float >&
+Trajectory::mbhx() const {
+  // @@protoc_insertion_point(field_list:motionClustering.Trajectory.mbhX)
+  return mbhx_;
+}
+ ::google::protobuf::RepeatedField< float >*
+Trajectory::mutable_mbhx() {
+  // @@protoc_insertion_point(field_mutable_list:motionClustering.Trajectory.mbhX)
+  return &mbhx_;
+}
+
+// repeated float mbhY = 6;
+int Trajectory::mbhy_size() const {
+  return mbhy_.size();
+}
+void Trajectory::clear_mbhy() {
+  mbhy_.Clear();
+}
+ float Trajectory::mbhy(int index) const {
+  // @@protoc_insertion_point(field_get:motionClustering.Trajectory.mbhY)
+  return mbhy_.Get(index);
+}
+ void Trajectory::set_mbhy(int index, float value) {
+  mbhy_.Set(index, value);
+  // @@protoc_insertion_point(field_set:motionClustering.Trajectory.mbhY)
+}
+ void Trajectory::add_mbhy(float value) {
+  mbhy_.Add(value);
+  // @@protoc_insertion_point(field_add:motionClustering.Trajectory.mbhY)
+}
+ const ::google::protobuf::RepeatedField< float >&
+Trajectory::mbhy() const {
+  // @@protoc_insertion_point(field_list:motionClustering.Trajectory.mbhY)
+  return mbhy_;
+}
+ ::google::protobuf::RepeatedField< float >*
+Trajectory::mutable_mbhy() {
+  // @@protoc_insertion_point(field_mutable_list:motionClustering.Trajectory.mbhY)
+  return &mbhy_;
+}
+
+#endif  // PROTOBUF_INLINE_NOT_IN_HEADERS
+
+// ===================================================================
+
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int TrajectoryList::kTracksFieldNumber;
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+
+TrajectoryList::TrajectoryList()
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:motionClustering.TrajectoryList)
+}
+
+void TrajectoryList::InitAsDefaultInstance() {
+  _is_default_instance_ = true;
+}
+
+TrajectoryList::TrajectoryList(const TrajectoryList& from)
+  : ::google::protobuf::Message(),
+    _internal_metadata_(NULL) {
+  SharedCtor();
+  MergeFrom(from);
+  // @@protoc_insertion_point(copy_constructor:motionClustering.TrajectoryList)
+}
+
+void TrajectoryList::SharedCtor() {
+    _is_default_instance_ = false;
+  _cached_size_ = 0;
+}
+
+TrajectoryList::~TrajectoryList() {
+  // @@protoc_insertion_point(destructor:motionClustering.TrajectoryList)
+  SharedDtor();
+}
+
+void TrajectoryList::SharedDtor() {
+  if (this != default_instance_) {
+  }
+}
+
+void TrajectoryList::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* TrajectoryList::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return TrajectoryList_descriptor_;
+}
+
+const TrajectoryList& TrajectoryList::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_dump_2eproto();
+  return *default_instance_;
+}
+
+TrajectoryList* TrajectoryList::default_instance_ = NULL;
+
+TrajectoryList* TrajectoryList::New(::google::protobuf::Arena* arena) const {
+  TrajectoryList* n = new TrajectoryList;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
+}
+
+void TrajectoryList::Clear() {
+  tracks_.Clear();
+}
+
+bool TrajectoryList::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:motionClustering.TrajectoryList)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoff(127);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // repeated .motionClustering.Trajectory tracks = 1;
+      case 1: {
+        if (tag == 10) {
+          DO_(input->IncrementRecursionDepth());
+         parse_loop_tracks:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtualNoRecursionDepth(
+                input, add_tracks()));
+        } else {
+          goto handle_unusual;
+        }
+        if (input->ExpectTag(10)) goto parse_loop_tracks;
+        input->UnsafeDecrementRecursionDepth();
+        if (input->ExpectAtEnd()) goto success;
+        break;
+      }
+
+      default: {
+      handle_unusual:
+        if (tag == 0 ||
+            ::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_END_GROUP) {
+          goto success;
+        }
+        DO_(::google::protobuf::internal::WireFormatLite::SkipField(input, tag));
+        break;
+      }
+    }
+  }
+success:
+  // @@protoc_insertion_point(parse_success:motionClustering.TrajectoryList)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:motionClustering.TrajectoryList)
+  return false;
+#undef DO_
+}
+
+void TrajectoryList::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:motionClustering.TrajectoryList)
+  // repeated .motionClustering.Trajectory tracks = 1;
+  for (unsigned int i = 0, n = this->tracks_size(); i < n; i++) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      1, this->tracks(i), output);
+  }
+
+  // @@protoc_insertion_point(serialize_end:motionClustering.TrajectoryList)
+}
+
+::google::protobuf::uint8* TrajectoryList::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // @@protoc_insertion_point(serialize_to_array_start:motionClustering.TrajectoryList)
+  // repeated .motionClustering.Trajectory tracks = 1;
+  for (unsigned int i = 0, n = this->tracks_size(); i < n; i++) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteMessageNoVirtualToArray(
+        1, this->tracks(i), target);
+  }
+
+  // @@protoc_insertion_point(serialize_to_array_end:motionClustering.TrajectoryList)
+  return target;
+}
+
+int TrajectoryList::ByteSize() const {
+  int total_size = 0;
+
+  // repeated .motionClustering.Trajectory tracks = 1;
+  total_size += 1 * this->tracks_size();
+  for (int i = 0; i < this->tracks_size(); i++) {
+    total_size +=
+      ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
+        this->tracks(i));
+  }
+
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = total_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void TrajectoryList::MergeFrom(const ::google::protobuf::Message& from) {
+  if (GOOGLE_PREDICT_FALSE(&from == this)) MergeFromFail(__LINE__);
+  const TrajectoryList* source = 
+      ::google::protobuf::internal::DynamicCastToGenerated<const TrajectoryList>(
+          &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void TrajectoryList::MergeFrom(const TrajectoryList& from) {
+  if (GOOGLE_PREDICT_FALSE(&from == this)) MergeFromFail(__LINE__);
+  tracks_.MergeFrom(from.tracks_);
+}
+
+void TrajectoryList::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void TrajectoryList::CopyFrom(const TrajectoryList& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool TrajectoryList::IsInitialized() const {
+
+  return true;
+}
+
+void TrajectoryList::Swap(TrajectoryList* other) {
+  if (other == this) return;
+  InternalSwap(other);
+}
+void TrajectoryList::InternalSwap(TrajectoryList* other) {
+  tracks_.UnsafeArenaSwap(&other->tracks_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  std::swap(_cached_size_, other->_cached_size_);
+}
+
+::google::protobuf::Metadata TrajectoryList::GetMetadata() const {
+  protobuf_AssignDescriptorsOnce();
+  ::google::protobuf::Metadata metadata;
+  metadata.descriptor = TrajectoryList_descriptor_;
+  metadata.reflection = TrajectoryList_reflection_;
+  return metadata;
+}
+
+#if PROTOBUF_INLINE_NOT_IN_HEADERS
+// TrajectoryList
+
+// repeated .motionClustering.Trajectory tracks = 1;
+int TrajectoryList::tracks_size() const {
+  return tracks_.size();
+}
+void TrajectoryList::clear_tracks() {
+  tracks_.Clear();
+}
+const ::motionClustering::Trajectory& TrajectoryList::tracks(int index) const {
+  // @@protoc_insertion_point(field_get:motionClustering.TrajectoryList.tracks)
+  return tracks_.Get(index);
+}
+::motionClustering::Trajectory* TrajectoryList::mutable_tracks(int index) {
+  // @@protoc_insertion_point(field_mutable:motionClustering.TrajectoryList.tracks)
+  return tracks_.Mutable(index);
+}
+::motionClustering::Trajectory* TrajectoryList::add_tracks() {
+  // @@protoc_insertion_point(field_add:motionClustering.TrajectoryList.tracks)
+  return tracks_.Add();
+}
+::google::protobuf::RepeatedPtrField< ::motionClustering::Trajectory >*
+TrajectoryList::mutable_tracks() {
+  // @@protoc_insertion_point(field_mutable_list:motionClustering.TrajectoryList.tracks)
+  return &tracks_;
+}
+const ::google::protobuf::RepeatedPtrField< ::motionClustering::Trajectory >&
+TrajectoryList::tracks() const {
+  // @@protoc_insertion_point(field_list:motionClustering.TrajectoryList.tracks)
+  return tracks_;
 }
 
 #endif  // PROTOBUF_INLINE_NOT_IN_HEADERS
@@ -566,13 +1256,13 @@ bool VideoInstance::MergePartialFromCodedStream(
         } else {
           goto handle_unusual;
         }
-        if (input->ExpectTag(42)) goto parse_tracks;
+        if (input->ExpectTag(34)) goto parse_tracks;
         break;
       }
 
-      // repeated .motionClustering.Trajectory tracks = 5;
-      case 5: {
-        if (tag == 42) {
+      // repeated .motionClustering.Trajectory tracks = 4;
+      case 4: {
+        if (tag == 34) {
          parse_tracks:
           DO_(input->IncrementRecursionDepth());
          parse_loop_tracks:
@@ -581,7 +1271,7 @@ bool VideoInstance::MergePartialFromCodedStream(
         } else {
           goto handle_unusual;
         }
-        if (input->ExpectTag(42)) goto parse_loop_tracks;
+        if (input->ExpectTag(34)) goto parse_loop_tracks;
         input->UnsafeDecrementRecursionDepth();
         if (input->ExpectAtEnd()) goto success;
         break;
@@ -631,10 +1321,10 @@ void VideoInstance::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteInt32(3, this->numclusters(), output);
   }
 
-  // repeated .motionClustering.Trajectory tracks = 5;
+  // repeated .motionClustering.Trajectory tracks = 4;
   for (unsigned int i = 0, n = this->tracks_size(); i < n; i++) {
     ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
-      5, this->tracks(i), output);
+      4, this->tracks(i), output);
   }
 
   // @@protoc_insertion_point(serialize_end:motionClustering.VideoInstance)
@@ -664,11 +1354,11 @@ void VideoInstance::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(3, this->numclusters(), target);
   }
 
-  // repeated .motionClustering.Trajectory tracks = 5;
+  // repeated .motionClustering.Trajectory tracks = 4;
   for (unsigned int i = 0, n = this->tracks_size(); i < n; i++) {
     target = ::google::protobuf::internal::WireFormatLite::
       WriteMessageNoVirtualToArray(
-        5, this->tracks(i), target);
+        4, this->tracks(i), target);
   }
 
   // @@protoc_insertion_point(serialize_to_array_end:motionClustering.VideoInstance)
@@ -699,7 +1389,7 @@ int VideoInstance::ByteSize() const {
         this->numclusters());
   }
 
-  // repeated .motionClustering.Trajectory tracks = 5;
+  // repeated .motionClustering.Trajectory tracks = 4;
   total_size += 1 * this->tracks_size();
   for (int i = 0; i < this->tracks_size(); i++) {
     total_size +=
@@ -852,7 +1542,7 @@ void VideoInstance::clear_numclusters() {
   // @@protoc_insertion_point(field_set:motionClustering.VideoInstance.numClusters)
 }
 
-// repeated .motionClustering.Trajectory tracks = 5;
+// repeated .motionClustering.Trajectory tracks = 4;
 int VideoInstance::tracks_size() const {
   return tracks_.size();
 }

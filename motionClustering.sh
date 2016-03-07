@@ -9,10 +9,10 @@
 declare -A CATEGORIES
 #CATEGORIES=( ['BackGolf']=5 ['Diving']=14 ['FrontGolf']=8 ['FrontKick']=10 ['Horse']=12 ['Lifting']=6 ['Running']=13 ['SideGolf']=5 ['SideKick']=10 ['SideSwing']=13 ['Skateboard']=12 ['SwingBench']=20 ['Walking']=22)
 CATEGORIES=(['Diving']=8 ['Horse']=8 ['Lifting']=6 ['SwingBench']=8 ['SideSwing']=9 ['Running']=7 ['Skateboard']=8 ['FrontGolf']=8 ['Walking']=8)
-#CATEGORIES=(['FrontGolf']=2)
-NUM_CLUSTERS=2
+#CATEGORIES=(['Diving']=7)
+NUM_CLUSTERS=1
 
-PARAM_R=90
+PARAM_R=50
 
 # Output path
 OUT_PATH="ClusteredTrajectories/r="
@@ -66,7 +66,6 @@ do
 			then
 				continue
 		fi
-
 		
 		
 		INPUT_VIDEO=$vid
