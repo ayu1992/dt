@@ -1,3 +1,9 @@
+#include <unordered_map>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <iostream>
+
 const int TRACK_INFO_LEN = 10;
 const int TRACK_LEN = 15;
 const int HOG_DIM = 96;
@@ -36,3 +42,4 @@ void readClusterId(const std::string& filename, std::unordered_map<int, int>& cl
   fin.close();
   return;
 }
+

@@ -1,5 +1,5 @@
 # set the binaries that have to be built
-TARGETS := ShowTrajectories ConstructCodebook DumpDominantTrajectoryCluster DrawClusters ClusterTraj DenseTrack Video
+TARGETS := ShowTrajectories ConstructCodebook DumpDominantTrajectoryCluster LocalizationScoreForVideo DrawClusters ClusterTraj DenseTrack Video
 
 protoc_middleman:
 	protoc --cpp_out=. dump.proto
@@ -13,9 +13,9 @@ ConstructCodebook: ConstructCodebook.cpp protoc_middleman
 	pkg-config --cflags protobuf
 	c++ ConstructCodebook.cpp dump.pb.cpp -o ConstructCodebook -std=c++11 -I /home/pighead/Documents/vlfeat -L /home/pighead/Documents/vlfeat/bin/glnxa64/ -lvl `pkg-config --cflags --libs protobuf`	
 
-#Cluster: ClusterTraj.o DenseTrack.h protoc_middleman
-#	pkg-config --cflags protobuf
-#	c++ ClusterTraj.cpp dump.pb.cpp -o ClusterTraj $(CXXFLAGS) $(LDFLAGS)`pkg-config --cflags --libs protobuf`	
+DenseTrackToProto: DenseTrackToProto.cpp protoc_middleman
+	pkg-config --cflags protobuf
+	c++ DenseTrackToProto.cpp dump.pb.cpp -o DenseTrackToProto -std=c++11 `pkg-config --cflags --libs protobuf`		
 
 ShowTrajectories: ShowTrajectories.cpp protoc_middleman
 	pkg-config --cflags protobuf

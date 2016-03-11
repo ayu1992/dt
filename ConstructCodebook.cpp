@@ -175,7 +175,7 @@ int main(int argc, char* argv[]) {
 	} else {
 	  google::protobuf::io::ZeroCopyInputStream* infile = new google::protobuf::io::FileInputStream(input);
 	  google::protobuf::io::CodedInputStream* coded_input = new google::protobuf::io::CodedInputStream(infile);
-	  coded_input->SetTotalBytesLimit(400 << 20, 200 << 20);
+	  coded_input->SetTotalBytesLimit(500 << 20, 300 << 20);
 	  if (!videoList.ParseFromCodedStream(coded_input)) {
 	    std::cerr << "Failed to parse videos QQ" << std::endl;
 	    return -1;
@@ -225,7 +225,7 @@ int main(int argc, char* argv[]) {
 	std::cout << trainingFeaturesForMbhY.size() << std::endl;
 	
 	/*
-	std::cout << "Writing training kernels to file" << std::endl;
+	std::cout << "Writing training features to file" << std::endl;
 	writeFeaturesToFile(filepath + "TrainingSet.data", videoList, vidForTraining, trainingFeaturesForPoints, trainingFeaturesForHoG, trainingFeaturesForHoF, trainingFeaturesForMbhX, trainingFeaturesForMbhY);
 	//writeSingleChannelToFile(filepath + "TrainingSet.data", videoList, vidForTraining, trainingFeaturesForMbhX);
 	std::cout << "Wrinting test set features to file" << std::endl;
@@ -233,7 +233,16 @@ int main(int argc, char* argv[]) {
 	//writeSingleChannelToFile(filepath + "TestingSet.data", videoList, vidForTesting, testingFeaturesForMbhX);
 	*/
 	
-	std::array<float, 5> Ac = writeTrainingKernelsToFile(filepath + "TrainingKernel.data", videoList, vidForTraining, trainingFeaturesForPoints, trainingFeaturesForHoG, trainingFeaturesForHoF, trainingFeaturesForMbhX, trainingFeaturesForMbhY);
+	
+	std::array<float, 5> Ac = writeTrainingKernelsToFile(
+		filepath + "TrainingKernel.data", 
+		videoList, 
+		vidForTraining,
+		trainingFeaturesForPoints, 
+		trainingFeaturesForHoG, 
+		trainingFeaturesForHoF, 
+		trainingFeaturesForMbhX, 
+		trainingFeaturesForMbhY);
 
 	writeTestingKernelsToFile(
 		filepath + "TestingKernel.data",
