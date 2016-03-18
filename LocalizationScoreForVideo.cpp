@@ -60,7 +60,8 @@ float countAverageTrajectoriesInBox(
 // ClusteredTrajectories/r=0.03/c=2/ InplutVideos/Diving/ numClusters vid thresh 
 int main(int argc, char** argv) {
   std::string inpath = argv[1];
-  std::string bbpath = argv[2];
+  std::string category = argv[2];
+  std::string bbpath = "ori/" + category + "/";
 
   int numClusters;
   std::istringstream getNumClusters(argv[3]);
@@ -92,8 +93,8 @@ int main(int argc, char** argv) {
   std::vector<Box> boxes = readBoundingBoxes(bbpath + std::to_string(vid) + ".txt");
 
   std::ofstream fout;
-  fout.open(inpath + "scores.txt", std::ofstream::out | std::ofstream::app);
-  fout << countAverageTrajectoriesInBox(trajInStrings, boxes, threshold, clusterId, largestClusterId, largestClusterSize) << std::endl;
+  fout.open(inpath + "scores_" + category + ".txt", std::ifstream::in | std::ofstream::out | std::ofstream::app);
+  fout << threshold << ":" << countAverageTrajectoriesInBox(trajInStrings, boxes, threshold, clusterId, largestClusterId, largestClusterSize) << std::endl;
   fout.close();
   
 return 0;  

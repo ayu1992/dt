@@ -1,5 +1,5 @@
 # set the binaries that have to be built
-TARGETS := ShowTrajectories ConstructCodebook DumpDominantTrajectoryCluster LocalizationScoreForVideo DrawClusters ClusterTraj DenseTrack Video
+TARGETS := ShowTrajectories ConstructCodebook DumpDominantTrajectoryCluster LocalizationScoreForVideo DrawClusters ClusterTracks DenseTrack Video
 
 protoc_middleman:
 	protoc --cpp_out=. dump.proto
@@ -21,6 +21,9 @@ ShowTrajectories: ShowTrajectories.cpp protoc_middleman
 	pkg-config --cflags protobuf
 	c++ ShowTrajectories.cpp dump.pb.cpp -o ShowTrajectories -std=c++11 `pkg-config --cflags --libs protobuf`
 
+ClusterTracks: ClusterTracks.cpp
+	g++ ClusterTracks.cpp -o ClusterTracks -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -std=c++11
+
 # set the build configuration set 
 BUILD := release
 #BUILD := debug
@@ -33,7 +36,7 @@ BINDIR := $(BUILD)
 LDLIBS = $(addprefix -l, $(LIBS) $(LIBS_$(notdir $*)))
 LIBS := \
 	opencv_core opencv_highgui opencv_video opencv_imgproc \
-	avformat avdevice avutil avcodec swscale
+	avformat avdevice avutil avcodec swscale boost_serialization
 
 # set some flags and compiler/linker specific commands
 CXXFLAGS = -pipe -D __STDC_CONSTANT_MACROS -D STD=std -Wall $(CXXFLAGS_$(BUILD)) -I. -I/opt/include -std=c++11
