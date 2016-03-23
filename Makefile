@@ -24,6 +24,9 @@ ShowTrajectories: ShowTrajectories.cpp protoc_middleman
 ClusterTracks: ClusterTracks.cpp
 	g++ ClusterTracks.cpp -o ClusterTracks -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -std=c++11
 
+LocalizationScoreForVideo: LocalizationScoreForVideo.cpp
+	g++ LocalizationScoreForVideo.cpp -o LocalizationScoreForVideo -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -std=c++11	
+
 # set the build configuration set 
 BUILD := release
 #BUILD := debug
