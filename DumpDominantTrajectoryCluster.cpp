@@ -1,15 +1,4 @@
-#include <iostream>
-#include <unordered_map>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <algorithm>
-#include "dump.pb.h"
-#include <fcntl.h>
-#include <unistd.h>
-#include <google/protobuf/io/zero_copy_stream_impl.h>
-#include <google/protobuf/io/coded_stream.h>
-#include "ParserHelpers.h"
+#include "BoostRelatedHelpers.h"
 
 /**
  * Takes result.txt (from pspectralclustering), sortedTrajectories.txt as input

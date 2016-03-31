@@ -1,23 +1,26 @@
-#include "ParserHelpers.h"
+#include "BoostRelatedHelpers.h"
 /* Read *.features, output sortedTrajectories */
 // Dimension information to parse input file
 const double TAU_S = 16.0;
 const int TAU_T = 8;
 
-const int TRACK_INFO_LEN = 10;
+const int TRACK_INFO_LEN = 12;
 
 void parseStringsToTracks(
-  const std::vector<std::string>& trajInStrings, const int L, std::vector<track>& tracks) {
+  const std::vector<std::string>& trajInStrings, const int L, std::vector<track>& tracks, int& videoWidth, int& videoHeight) {
   for (auto const& str: trajInStrings) {
     std::vector<float> val = split(str, '\t');
 
+    videoWidth = val[0];
+    videoHeight = val[1];
+
     std::vector<point> displacements;
-    for (int i = TRACK_INFO_LEN; i < 2 * TRACK_LEN + 10; i += 2) {
+    for (int i = TRACK_INFO_LEN; i < 2 * TRACK_LEN + TRACK_INFO_LEN; i += 2) {
       displacements.push_back(point(val[i], val[i+1]));
     }
 
     std::vector<point> coords(displacements);
-    unnormalizePoints(coords, val[5], val[1], val[2]);
+    unnormalizePoints(coords, val[7], val[3], val[4]);
 
     // Construct Descriptor objects
     std::vector<float>::iterator hogIteratorBegin = val.begin() + TRACK_INFO_LEN + 2 * TRACK_LEN;
@@ -33,18 +36,22 @@ void parseStringsToTracks(
 
     // Construct Tracks
     tracks.push_back(
-      track(static_cast<int>(val[0]), val[1], val[2], val[3], val[4], val[5], val[6], val[7], val[8], val[9], displacements, coords, hog, hof, mbhx, mbhy));
+      track(static_cast<int>(val[2]), val[3], val[4], val[5], val[6], val[7], val[8], val[9], val[10], val[11], displacements, coords, hog, hof, mbhx, mbhy));
   }
 }
 
 // Generate Graph : d -> E -> S
 // tracks were sorted in order by ending frames
-std::map<std::pair<int, int>, double> generateGraph(const std::vector<track>& tracks, const float r) {
+std::map<std::pair<int, int>, double> generateGraph(const std::vector<track>& tracks, const float r, const int videoWidth, const int videoHeight) {
   std::map<std::pair<int, int>, double> D;
 
   auto spatialDistance = [](const point& p1, const point& p2)-> float {
     point diff = p1 - p2;
     return sqrt(diff.x * diff.x + diff.y * diff.y);
+  };
+
+  auto normalizeByDimension = [videoWidth, videoHeight](const point& p)-> point {
+    return point(static_cast<int>(round(static_cast<float>(p.x) / videoWidth)), static_cast<int>(round(static_cast<float>(p.y) / videoHeight)));
   };
 
   for(size_t traj_i = 0; traj_i < tracks.size(); traj_i++) {
@@ -67,16 +74,27 @@ std::map<std::pair<int, int>, double> generateGraph(const std::vector<track>& tr
         continue;
       }
 
+      std::vector<point> xi;
+      for (const auto& p : tracks[traj_i].coords) {
+        xi.push_back(normalizeByDimension(p));
+      }
+
+      std::vector<point> xj;
+      for (const auto& p : tracks[traj_j].coords) {
+        xj.push_back(normalizeByDimension(p));
+      }
+      
       // Compute d_ij
       double d = 0.0;
       for(int index_i = offset; index_i < TRACK_LEN; ++index_i) {
-        d += spatialDistance(tracks[traj_i].coords[index_i], tracks[traj_j].coords[index_i - offset]);
+        //d += spatialDistance(tracks[traj_i].displacements[index_i], tracks[traj_j].displacements[index_i - offset]);
+        d += spatialDistance(xi[index_i], xj[index_i - offset]);
       }
 
       // Compute s_ij
       if((d / overlap) < TAU_S) {     // equation 3 in paper
         //std::cout << "d : "<< d <<"; or: " << offset * r << "; or^2: "<< pow(offset * r, 2) << std::endl;
-        dij = (d + pow(offset * r, 2));
+        dij = ( d + pow(offset * r, 2));
         //dij = d + offset * r;
         D.emplace(std::make_pair(traj_i, traj_j), dij);
       }
@@ -101,6 +119,9 @@ void printDistanceMatrix(const std::string& filename, const std::map<std::pair<i
       neighbors[trj_j].emplace_back(trj_i, dij);
   } // end of iterating D
 
+  for (int i = 0; i < N; i++) {
+    neighbors[i].emplace_back(i, 0.00000000001);
+  }
   // Output pspec id :track id
   // sort and print each list in neighbors
   for(auto& v : neighbors) {
@@ -134,10 +155,11 @@ int main(int argc, char** argv) {
 
   // Read and pack feature dump into Tracks(temporary container)
   readFileIntoStrings(inpath, trajInStrings);
-  
-  parseStringsToTracks(trajInStrings, TRACK_LEN, tracks); 
+  int videoWidth, videoHeight;
+  parseStringsToTracks(trajInStrings, TRACK_LEN, tracks, videoWidth, videoHeight); 
   std::cout << "[ClusterTracks] "<< tracks.size() << " trajectories in total" << std::endl;
 
+ // std::vector<track> tracks(large.begin(), large.begin() + 10);
   // Sort Tracks by ending frame for ease of graph construction
   std::sort(
     tracks.begin(), 
@@ -146,22 +168,11 @@ int main(int argc, char** argv) {
       return a.endingFrame < b.endingFrame;});
 
   // (traj index i, traj index j) -> s_ij
-  std::map<std::pair<int, int>, double> D = generateGraph(tracks, r);
+  std::map<std::pair<int, int>, double> D = generateGraph(tracks, r, videoWidth, videoHeight);
 
   /* Some nodes are isolated, remove them; we'll only be looking at the edge set */
   // [[trj 0's neighbors], [trj 1's neighbors], ..., [trj N-1's]]
   
-  /*std::vector<std::vector<std::pair<int, double>>> neighbors(N);
-
-  // iterate every pair in D
-  for (const auto& pair : D) {
-      int trj_i = pair.first.first;
-      int trj_j = pair.first.second;
-      double dij = pair.second;
-      neighbors[trj_i].emplace_back(trj_j, dij);
-      neighbors[trj_j].emplace_back(trj_i, dij);
-  } // end of iterating D
-*/
   // Output s_ij for spectral clustering
   printDistanceMatrix(dumppath + "dij.txt", D, tracks.size());
   

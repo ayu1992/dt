@@ -1,9 +1,6 @@
 #include "CodebookHelpers.h"
-#include <string>
-#include <fcntl.h>
-#include <unistd.h>
-#include <google/protobuf/io/zero_copy_stream_impl.h>
-#include <google/protobuf/io/coded_stream.h>
+#include "BoostRelatedHelpers.h"
+
 /* Seperate data into training and testing sets
    Delay cross validation to libsvm
 */
@@ -162,25 +159,11 @@ void generateTrainingAndTestFeaturesForChannel(
 int main(int argc, char* argv[]) {
 
 	srand(0);
-
 	motionClustering::VideoList videoList;
 	
 	std::string filepath = argv[1];
 	std::string dumpPath = filepath + "TrajectoryDump.data";
 
-	int input = open(dumpPath.c_str(), O_RDONLY);
-
-	if (!input) {
-	    std::cout << ": File not found.  Creating a new file later." << std::endl;
-	} else {
-	  google::protobuf::io::ZeroCopyInputStream* infile = new google::protobuf::io::FileInputStream(input);
-	  google::protobuf::io::CodedInputStream* coded_input = new google::protobuf::io::CodedInputStream(infile);
-	  coded_input->SetTotalBytesLimit(500 << 20, 300 << 20);
-	  if (!videoList.ParseFromCodedStream(coded_input)) {
-	    std::cerr << "Failed to parse videos QQ" << std::endl;
-	    return -1;
-	  }
-	}
 
 	std::cout << "Total data dump contains " << countTracks(videoList) << " trajectories" << std::endl;
 

@@ -58,7 +58,7 @@ int main(int argc, char** argv)
 
 	std::vector<std::list<Track> > xyScaleTracks;     // each vector item : a list of Tracks from a pyramid layer 
 	int init_counter = 0; // indicate when to detect new feature points
-	
+	int frames = 0;
   /* Frame-by-frame compuations */
   while(true) {
 		Mat frame;
@@ -189,8 +189,8 @@ int main(int argc, char** argv)
 				
 					float mean_x(0), mean_y(0), var_x(0), var_y(0), length(0);
 					if(IsValid(trajectory, mean_x, mean_y, var_x, var_y, length)) {
-						printf("%d\t%f\t%f\t%f\t%f\t%f\t%f\t", frame_num, mean_x, mean_y, var_x, var_y, length, fscales[iScale]);
-
+						printf("%d\t%d\t%d\t%f\t%f\t%f\t%f\t%f\t%f\t", seqInfo.width, seqInfo.height, frame_num, mean_x, mean_y, var_x, var_y, length, fscales[iScale]);
+						//printf("%d\t%f\t%f\t%f\t%f\t%f\t%f\t", frame_num, mean_x, mean_y, var_x, var_y, length, fscales[iScale]);
 						// for spatio-temporal pyramid
 						printf("%f\t", std::min<float>(std::max<float>(mean_x/float(seqInfo.width), 0), 0.999));
 						printf("%f\t", std::min<float>(std::max<float>(mean_y/float(seqInfo.height), 0), 0.999));
@@ -241,9 +241,9 @@ int main(int argc, char** argv)
 		}
 
 		frame_num++;
-
 		if( show_track == 1 ) {
-			imshow( "DenseTrack", image);
+			//imshow( "DenseTrack", image);
+			imwrite("demo/" + std::to_string(frames++) + ".png", image);
 			c = cvWaitKey(3);
 			if((char)c == 27) break;
 		}
