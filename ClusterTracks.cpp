@@ -4,42 +4,6 @@
 const double TAU_S = 16.0;
 const int TAU_T = 8;
 
-const int TRACK_INFO_LEN = 12;
-
-void parseStringsToTracks(
-  const std::vector<std::string>& trajInStrings, const int L, std::vector<track>& tracks, int& videoWidth, int& videoHeight) {
-  for (auto const& str: trajInStrings) {
-    std::vector<float> val = split(str, '\t');
-
-    videoWidth = val[0];
-    videoHeight = val[1];
-
-    std::vector<point> displacements;
-    for (int i = TRACK_INFO_LEN; i < 2 * TRACK_LEN + TRACK_INFO_LEN; i += 2) {
-      displacements.push_back(point(val[i], val[i+1]));
-    }
-
-    std::vector<point> coords(displacements);
-    unnormalizePoints(coords, val[7], val[3], val[4]);
-
-    // Construct Descriptor objects
-    std::vector<float>::iterator hogIteratorBegin = val.begin() + TRACK_INFO_LEN + 2 * TRACK_LEN;
-    std::vector<float> hog(hogIteratorBegin, hogIteratorBegin + HOG_DIM);
-    std::vector<float>::iterator hofIteratorBegin = hogIteratorBegin + HOG_DIM;
-    std::vector<float> hof(hogIteratorBegin, hogIteratorBegin + HOG_DIM);
-
-    std::vector<float>::iterator mbhxIteratorBegin = hofIteratorBegin + HOF_DIM;
-    std::vector<float> mbhx(mbhxIteratorBegin, mbhxIteratorBegin + MBHX_DIM);
-
-    std::vector<float>::iterator mbhyIteratorBegin = mbhxIteratorBegin + MBHX_DIM;
-    std::vector<float> mbhy(mbhyIteratorBegin, mbhyIteratorBegin + MBHY_DIM);
-
-    // Construct Tracks
-    tracks.push_back(
-      track(static_cast<int>(val[2]), val[3], val[4], val[5], val[6], val[7], val[8], val[9], val[10], val[11], displacements, coords, hog, hof, mbhx, mbhy));
-  }
-}
-
 // Generate Graph : d -> E -> S
 // tracks were sorted in order by ending frames
 std::map<std::pair<int, int>, double> generateGraph(const std::vector<track>& tracks, const float r, const int videoWidth, const int videoHeight) {
@@ -150,13 +114,11 @@ int main(int argc, char** argv) {
   std::istringstream getGamma(argv[3]);
   getGamma >> r;
 
+  // Read and pack feature dump into Tracks(temporary container)
   std::vector<track> tracks; 
   std::vector<std::string> trajInStrings;
-
-  // Read and pack feature dump into Tracks(temporary container)
-  readFileIntoStrings(inpath, trajInStrings);
   int videoWidth, videoHeight;
-  parseStringsToTracks(trajInStrings, TRACK_LEN, tracks, videoWidth, videoHeight); 
+  parseFeaturesToTracks(inpath, trajInStrings, TRACK_LEN, tracks, videoWidth, videoHeight); 
   std::cout << "[ClusterTracks] "<< tracks.size() << " trajectories in total" << std::endl;
 
  // std::vector<track> tracks(large.begin(), large.begin() + 10);

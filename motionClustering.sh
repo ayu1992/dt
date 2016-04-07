@@ -8,7 +8,6 @@
        
 declare -A CATEGORIES
 #CATEGORIES=( ['BackGolf']=5 ['Diving']=14 ['FrontGolf']=8 ['FrontKick']=10 ['Horse']=12 ['Lifting']=6 ['Running']=13 ['SideGolf']=5 ['SideKick']=10 ['SideSwing']=13 ['Skateboard']=12 ['SwingBench']=20 ['Walking']=22)
-#CATEGORIES=(['Diving']=8 ['Horse']=8 ['Lifting']=6 ['SwingBench']=8 ['SideSwing']=9 ['Running']=7 ['Skateboard']=8 ['FrontGolf']=8 ['Walking']=8)
 # problems iwth frontgolf data!
 #CATEGORIES=(['Diving']=14)
 #['Golf-Swing-Front']=8

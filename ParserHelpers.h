@@ -10,12 +10,13 @@
 #include <functional>
 
 const int TRACK_LEN = 15;
+const int TRACK_INFO_LEN = 12;
 const int HOG_DIM = 96;
 const int HOF_DIM = 108;
 const int MBHX_DIM = 96;
 const int MBHY_DIM = 96;
 
-std::map<std::string, int> actionClassMap {
+std::map<std::string, int> ucfActionClassMap {
   {"Diving-Side", 0},
   {"Golf-Swing-Back", 1},
   {"Golf-Swing-Side", 2},
@@ -29,6 +30,25 @@ std::map<std::string, int> actionClassMap {
   {"Swing-SideAngle", 10},
   {"Walk-Front", 11},
   {"Golf-Swing-Front", 12}
+};
+
+std::map<std::string, int> OlympicActionClassMap {
+  {"bowling", 0},
+  {"triple_jump", 1},
+  {"pole_vault", 2},
+  {"diving_platform", 3},
+  {"hammer_throw", 4},
+  {"tennis_serve", 5},
+  {"snatch", 6},
+  {"vault", 7},
+  {"clean_and_jerk", 8},
+  {"basketball_layup", 9},
+  {"high_jump", 10},
+  {"shot_put", 11},
+  {"long_jump", 12},
+  {"discus_throw", 13},
+  {"diving_springboard", 14},
+  {"javelin_throw", 15}
 };
 
 // Splits a string into tokens by delim character
