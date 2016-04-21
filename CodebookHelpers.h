@@ -169,44 +169,6 @@ void appendTracksToData(const google::protobuf::RepeatedPtrField< ::motionCluste
 	}
 }
 
-/*
-void appendTracksToDataWithCap(const google::protobuf::RepeatedPtrField< ::motionClustering::Trajectory>& tracks, int& row, float* data, const int cap) {
-	// Append all if it's under cap.
-	if (tracks.size() <= cap) return appendTracksToData(tracks, row, data);
-	
-	// random sample tracks if over cap.
-	std::vector<int> indices(tracks.size());
-	for (int i = 0; i < tracks.size(); ++i) indices[i] = i;
-	std::random_shuffle(indices.begin(), indices.end());
-	for (int i = 0; i < cap; ++i) {
-		for (int j = 0; j < dimension; ++j) {
-			data[row * dimension + j] = tracks.Get(indices[i]).normalizedpoints(j);
-		}
-		++row;
-	}
-}*/
-
-// cap : const for each video
-/*
-std::unique_ptr<float[]> getDataForCodebookWithCap_CV(const std::map<int, DataSplit>& dataSplitForClass, const motionClustering::VideoList& videoList, int& numData, const int cap) {
-	numData = 0;
-	for (const auto& actionClass : dataSplitForClass) {
-    	for (int vid : actionClass.second.TrainingSetVid[0]) {
-   			numData += std::min(videoList.videos(vid).tracks_size(), cap);
-    	}
-    }
-    std::cout << "ARHHHH" << std::endl;
-	int row = 0;
-	std::unique_ptr<float[]> data(new float[numData * dimension]);
-	for (const auto& actionClass : dataSplitForClass) {
-		for (int vid : actionClass.second.TrainingSetVid[0]) {
-			appendTracksToDataWithCap(videoList.videos(vid).tracks(), row, data.get(), cap);
-		}
-	}
-    std::cout << "OHHHH" << std::endl;
-	return data;
-}*/
-
 template <typename Functor>
 int makeCodebook(
 	float* data, 
@@ -382,23 +344,23 @@ std::array<float, 5> writeTrainingKernelsToFile(
 	const std::vector<std::vector<float>>& mbhx,
 	const std::vector<std::vector<float>>& mbhy) {
 	const int N = points.size();
-	std::vector<std::vector<float>> chi_squares(N, std::vector<float>(N, 0));
+	std::vector<std::vector<float>> K(N, std::vector<float>(N, 0));
 	std::array<float, 5> acs;
 
-	auto add_channel_to_chi_squares = [&chi_squares, &acs, N](const std::vector<std::vector<float>>& channel, int channel_num) {
+	auto add_channel_to_K = [&K, &acs, N](const std::vector<std::vector<float>>& channel, int channel_num) {
 		std::vector<std::vector<float>> channel_chi_sq = computeNormalizedChiSquareDistanceForChannel(channel, acs[channel_num]);
 		for (int i = 0; i < N; ++i) {
-			for (int j = 0; j < N; ++j) chi_squares[i][j] += channel_chi_sq[i][j];
+			for (int j = 0; j < N; ++j) K[i][j] += channel_chi_sq[i][j];
 		}
 	};
 
-	add_channel_to_chi_squares(points, 0);
-	add_channel_to_chi_squares(hog, 1);
-	add_channel_to_chi_squares(hof, 2);
-	add_channel_to_chi_squares(mbhx, 3);
-	add_channel_to_chi_squares(mbhy, 4);
+	add_channel_to_K(points, 0);
+	add_channel_to_K(hog, 1);
+	add_channel_to_K(hof, 2);
+	add_channel_to_K(mbhx, 3);
+	add_channel_to_K(mbhy, 4);
 	for (int i = 0; i < N; ++i) {
-		for (int j = 0; j < N; ++j) chi_squares[i][j] = std::exp(-1 * chi_squares[i][j]);
+		for (int j = 0; j < N; ++j) K[i][j] = std::exp(-1 * K[i][j]);
 	}
 
 	std::cout << "Writing kernel to file" << std::endl;
@@ -406,16 +368,11 @@ std::array<float, 5> writeTrainingKernelsToFile(
 	fout.open (filepath, std::fstream::in | std::fstream::out | std::fstream::app);
 	auto map_it = vidInSequence.begin();
 	auto vec_it = map_it->second.begin();
-	// Avoid empty vectors.
-	while (vec_it == map_it->second.end()) {
-		++map_it;
-		vec_it = map_it->second.begin();
-	}
 
 	for (int i = 0; i < N; ++i) {
-		fout << map_it->first << " ";
+		fout << labels[i] << " ";		// label
 		fout << "0:" << (i + 1);
-		for (int j = 0; j < N; ++j) fout << " " << (j + 1) << ":" << chi_squares[i][j];
+		for (int j = 0; j < N; ++j) fout << " " << (j + 1) << ":" << K[i][j];
 		fout << std::endl;
 
 		++vec_it;
@@ -446,22 +403,22 @@ void writeTestingKernelsToFile(
 	const std::vector<std::vector<float>>& mbhy_tr) {
 	const int M = points_te.size();  // Size of testing set.
 	const int N = points_tr.size();  // Size of training set.
-	std::vector<std::vector<float>> chi_squares(M, std::vector<float>(N, 0));
+	std::vector<std::vector<float>> K(M, std::vector<float>(N, 0));
 
-	auto add_channel_to_chi_squares = [&chi_squares, &acs, M, N](const std::vector<std::vector<float>>& testing, const std::vector<std::vector<float>>& training, int channel_num) {
+	auto add_channel_to_K = [&K, &acs, M, N](const std::vector<std::vector<float>>& testing, const std::vector<std::vector<float>>& training, int channel_num) {
 		std::vector<std::vector<float>> channel_chi_sq = computeNormalizedChiSquareDistanceForTesting(testing, training, acs[channel_num]);
 		for (int i = 0; i < M; ++i) {
-			for (int j = 0; j < N; ++j) chi_squares[i][j] += channel_chi_sq[i][j];
+			for (int j = 0; j < N; ++j) K[i][j] += channel_chi_sq[i][j];
 		}
 	};
 
-	add_channel_to_chi_squares(points_te, points_tr, 0);
-	add_channel_to_chi_squares(hog_te, hog_tr, 1);
-	add_channel_to_chi_squares(hof_te, hof_tr, 2);
-	add_channel_to_chi_squares(mbhx_te, mbhx_tr, 3);
-	add_channel_to_chi_squares(mbhy_te, mbhx_tr, 4);
+	add_channel_to_K(points_te, points_tr, 0);
+	add_channel_to_K(hog_te, hog_tr, 1);
+	add_channel_to_K(hof_te, hof_tr, 2);
+	add_channel_to_K(mbhx_te, mbhx_tr, 3);
+	add_channel_to_K(mbhy_te, mbhx_tr, 4);
 	for (int i = 0; i < M; ++i) {
-		for (int j = 0; j < N; ++j) chi_squares[i][j] = std::exp(-1 * chi_squares[i][j]);
+		for (int j = 0; j < N; ++j) K[i][j] = std::exp(-1 * K[i][j]);
 	}
 
 	std::cout << "Writing kernel to file" << std::endl;
@@ -478,7 +435,7 @@ void writeTestingKernelsToFile(
 	for (int i = 0; i < M; ++i) {
 		fout << map_it->first << " ";
 		fout << "0:" << (i + 1);
-		for (int j = 0; j < N; ++j) fout << " " << (j + 1) << ":" << chi_squares[i][j];
+		for (int j = 0; j < N; ++j) fout << " " << (j + 1) << ":" << K[i][j];
 		fout << std::endl;
 
 		++vec_it;

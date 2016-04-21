@@ -1,5 +1,5 @@
+#include <limits>       // std::numeric_limits
 #include <random>
-#include <vector>
 #include <ctime>        // std::time
 #include <cstdlib>      // std::rand, std::srand
 #include "BoostRelatedHelpers.h"
@@ -11,15 +11,15 @@ extern "C" {
 
 constexpr int kNumRandomSamples = 100000;
 constexpr int reservoirCacheSize = 300000;
-constexpr float validationPercentage = 0.2;
 constexpr int numCenters = 4000;
-constexpr int numCodebookIter = 1;
+constexpr int numCodebookIter = 8;
 
 using ClassToFileNames = std::map<std::string, std::vector<std::string>>;
 using LabelAndTracks = std::pair<int, std::vector<track>>;
 
 /* Reads and load a bunch of archives (from a specified location) in memory and output feature vectors */
-void getArchiveNames(const std::string archivesLocation, std::vector<std::string>& archiveNames) {
+std::vector<std::string> getArchiveNames(const std::string archivesLocation) {
+	std::vector<std::string> archiveNames;
 	DIR* dirp = opendir(archivesLocation.c_str());
 	dirent* dp = NULL;
 	while ((dp = readdir(dirp)) != NULL) {
@@ -29,6 +29,7 @@ void getArchiveNames(const std::string archivesLocation, std::vector<std::string
 		}
 	}
 	closedir(dirp);
+	return archiveNames;
 }
 
 template <typename T>
@@ -58,17 +59,18 @@ void getTrainingSamples(std::vector<track>& samples, const std::vector<std::stri
 }
 
 void checkContainNaN(const std::vector<track>& tracks) {
+	std::cout << "Checking for dirty data" << std::endl;
 	bool isDirty;
 	for (const auto& t : tracks) {
 		isDirty = false;
-		std::for_each(t.coords.begin(), t.coords.end(), [&isDirty](const point& p){
-			if (std::isnan(p.x) || std::isnan(p.y))	isDirty = true;
+		std::for_each(t.displacements.begin(), t.displacements.end(), [&isDirty](const point& p){
+			if (!std::isfinite(p.x) || !std::isfinite(p.y))	isDirty = true;
 		});
 
-		if(std::any_of(t.hog.begin(), t.hog.end(), [](const float& f){return std::isnan(f);})
-		|| std::any_of(t.hof.begin(), t.hof.end(), [](const float& f){return std::isnan(f);})
-		|| std::any_of(t.mbhx.begin(), t.mbhx.end(), [](const float& f){return std::isnan(f);})
-		|| std::any_of(t.mbhy.begin(), t.mbhy.end(), [](const float& f){return std::isnan(f);})) {
+		if(std::any_of(t.hog.begin(), t.hog.end(), [](const float& f){return !std::isfinite(f);})
+		|| std::any_of(t.hof.begin(), t.hof.end(), [](const float& f){return !std::isfinite(f);})
+		|| std::any_of(t.mbhx.begin(), t.mbhx.end(), [](const float& f){return !std::isfinite(f);})
+		|| std::any_of(t.mbhy.begin(), t.mbhy.end(), [](const float& f){return !std::isfinite(f);})) {
 			isDirty = true;
 		}
 		if (isDirty) std::cout << "===========================Dirty data============================" << std::endl;
@@ -77,7 +79,6 @@ void checkContainNaN(const std::vector<track>& tracks) {
 
 template <typename Functor>
 std::unique_ptr<float[]> getData (const std::vector<track>& tracks) {
-	//std::cout << "Filling data array" << std::endl;
 	std::unique_ptr<float[]> data(new float[tracks.size() * Functor::dimension]);
 	int row = 0;
 	for (const auto& t : tracks) {
@@ -109,10 +110,10 @@ std::unique_ptr<VlKMeans> makeCodebook(float* data, const int numData) {
 		vl_kmeans_refine_centers (kmeans, data, numData) ;
 		energy = vl_kmeans_get_energy(kmeans) ;
 
-  		std::unique_ptr<vl_uint32[]> assignments(new vl_uint32[numData]);
-		std::unique_ptr<float[]> distances(new float[numData]);
-
-		vl_kmeans_quantize(kmeans, assignments.get(), distances.get(), data, numData);
+		vl_uint32* assignments = (vl_uint32*)vl_malloc(sizeof(vl_uint32) * numData);
+		float* distances = (float*)vl_malloc(sizeof(float) * numData);
+		
+		vl_kmeans_quantize(kmeans, assignments, distances, data, numData);
   		
   		kmeansInstances.emplace_back(kmeans);
 		kmeansCenters.push_back((float*)vl_kmeans_get_centers(kmeans));
@@ -137,40 +138,6 @@ std::unique_ptr<VlKMeans> getCodebook(const std::vector<track>& trainingSet) {
 	return makeCodebook<Functor>(data.get(), kNumRandomSamples);	
 }
 
-ClassToFileNames sortFilenamesByClass(const std::vector<std::string>& archiveNames) {
-	ClassToFileNames classToFilenames;
-	for (const auto& name : archiveNames) {
-		size_t pos = name.find("_");
-		std::string className = name.substr(0, pos);
-		classToFilenames[className].emplace_back(name);
-	}
-	return classToFilenames;
-}
-
-std::vector<std::string> drawValidationSet(ClassToFileNames& copyOfClassToNames) {
-	std::vector<std::string> validationSet;
-	for (auto& pair : copyOfClassToNames) {
-		// For each class, random shuffle the names
-		std::random_shuffle(pair.second.begin(), pair.second.end());
-		// and then draw 20% as validation set
-		int classSize = pair.second.size() * validationPercentage;
-		
-		// Leave one out strategy
-		validationSet.emplace_back(pair.second.back());	
-		pair.second.pop_back();		
-	}
-
-	return validationSet;
-}
-
-std::vector<std::string> gatherTrainingSet(ClassToFileNames& copyOfClassToNames) {
-	std::vector<std::string> trainingSet;
-	for (auto& pair: copyOfClassToNames) {
-		std::move(pair.second.begin(), pair.second.end(), std::back_inserter(trainingSet));
-	}
-	return trainingSet;
-}
-
 std::vector<LabelAndTracks> getVideoLabelToTracks(const std::vector<std::string>& filenames, const std::string& pathToFiles) {
 	std::vector<LabelAndTracks> ret;
 	for (const std::string& filename : filenames) {
@@ -186,23 +153,49 @@ std::vector<LabelAndTracks> getVideoLabelToTracks(const std::vector<std::string>
 	return ret;
 }
 
-std::vector<float> transformData(VlKMeans* kmeans, float* data, int numTracks) {
-	//std::unique_ptr<vl_uint32[]> assignments(new vl_uint32[numTracks]);
-	//std::unique_ptr<float[]> distances(new float[numTracks]);
-	vl_uint32* assignments = (vl_uint32*)vl_malloc(sizeof(vl_uint32) * numTracks);
-	float* distances = (float*)vl_malloc(sizeof(float) * numTracks);
-	std::vector<float> featureVector(numCenters, 0.0);
-	//std::cout << "Transform data" << std::endl;
-	vl_kmeans_quantize(kmeans, assignments, distances, data, numTracks);
-	for (int i = 0; i < numTracks; ++i) {
-		int a = (int32_t)assignments[i];
-		if (a >= featureVector.size()) {
-			std::cout << "Invalid assignment: " << assignments[i] << " " << a << " from track #" << i << std::endl;
+inline float computeDistance(const std::vector<float>& data, const float* center, int dimension) {
+	float distance = 0;
+	for (int i = 0; i < dimension; ++i) distance += (data[i] - center[i]) * (data[i] - center[i]);
+	return std::isfinite(distance) ? distance : std::numeric_limits<float>::max();
+}
+
+template <typename Functor>
+std::vector<int> quantize(VlKMeans* kmeans, const std::vector<track>& tracks) {
+	std::vector<int> assignments(tracks.size(), -1);
+	int ti = 0;
+	for (size_t ti = 0; ti < tracks.size(); ++ti) {
+		const track& t = tracks[ti];
+		float* centers = static_cast<float*>(kmeans->centers);						// centers is a 1D
+		//std::cout << "track #" << ti << std::endl;
+		const std::vector<float>& track_data = Functor()(t);		// ex. 96 x 1
+		float best_distance = computeDistance(track_data, centers, Functor::dimension);
+		int best_index = 0;
+		for (int i = 1; i < numCenters; ++i) {
+			centers += Functor::dimension;
+			float distance = computeDistance(track_data, centers, Functor::dimension);
+			if (distance < best_distance) {
+				best_distance = distance;
+				best_index = i;
+			}
+		}
+		assignments[ti] = best_index;
+	}
+	return assignments;
+}
+
+template <typename Functor>
+std::vector<float> transformData(VlKMeans* kmeans, const std::vector<track>& tracks) {
+	std::vector<int> assignments = quantize<Functor>(kmeans, tracks);
+	std::vector<float> features(numCenters, 0);
+	for (int i = 0; i < assignments.size(); ++i) {
+		if (assignments[i] >= numCenters || assignments[i] < 0) {
+			std::cout << "Bad assignment: " << assignments[i] << std::endl;
 			continue;
 		}
-		featureVector[a] += static_cast<float>(1.0 / numTracks);	
+		features[assignments[i]] += 1;
 	}
-	return featureVector;		// rvo
+	for (size_t i = 0; i < features.size(); ++i) features[i] /= tracks.size();
+	return features;
 }
 
 void writeFeaturesToFile(const std::string& filename, const std::multimap<int, std::vector<float>>& features) {
@@ -219,6 +212,12 @@ void writeFeaturesToFile(const std::string& filename, const std::multimap<int, s
 	fout.close();
 }
 
+// Insert all items in `a` to b.end().
+template <typename T>
+void vectorInsert(const std::vector<T>& a, std::vector<T>& b) {
+	b.insert(b.end(), a.begin(), a.end());
+}
+
 void generateFeatures(const std::vector<std::string>& filenames, const std::string& archivesLocation, const std::vector<std::unique_ptr<VlKMeans>>& codebooks, const std::string& outputName) {
 	// transform data to features
 	std::vector<LabelAndTracks> videos = getVideoLabelToTracks(filenames, archivesLocation);
@@ -226,55 +225,56 @@ void generateFeatures(const std::vector<std::string>& filenames, const std::stri
 
 	for (const auto& instance : videos) {	// Each instance corresponds to a video
 		if (instance.second.empty())	continue;
-		checkContainNaN(instance.second);
-		std::vector<float> feature = transformData(codebooks[0].get(), getData<NormalizedPointGetter>(instance.second).get(), instance.second.size());
-		std::vector<float> Hogfeature = transformData(codebooks[1].get(), getData<HogGetter>(instance.second).get(), instance.second.size());
-		feature.insert(feature.end(), Hogfeature.begin(), Hogfeature.end());
-		
-		std::vector<float> Hoffeature = transformData(codebooks[2].get(), getData<HofGetter>(instance.second).get(), instance.second.size());
-		feature.insert(feature.end(), Hoffeature.begin(), Hoffeature.end());
-		
-		std::vector<float> Mbhxfeature = transformData(codebooks[3].get(), getData<MbhXGetter>(instance.second).get(), instance.second.size());
-		feature.insert(feature.end(), Mbhxfeature.begin(), Mbhxfeature.end());
-		
-		std::vector<float> Mbhyfeature = transformData(codebooks[4].get(), getData<MbhYGetter>(instance.second).get(), instance.second.size());
-		feature.insert(feature.end(), Mbhyfeature.begin(), Mbhyfeature.end());
-
+		std::cout << instance.second.size() << " tracks" << std::endl;
+		std::cout << "Displacements" << std::endl;
+		std::vector<float> feature = transformData<DisplacementsGetter>(codebooks[0].get(), instance.second);
+		std::cout << "Hog" << std::endl;
+		//std::vector<float> feature = transformData<HogGetter>(codebooks[0].get(), instance.second);
+		vectorInsert(transformData<HogGetter>(codebooks[1].get(), instance.second), feature);
+		std::cout << "Hof" << std::endl;
+		vectorInsert(transformData<HofGetter>(codebooks[2].get(), instance.second), feature);
+		std::cout << "MbhX" << std::endl;
+		vectorInsert(transformData<MbhXGetter>(codebooks[3].get(), instance.second), feature);
+		std::cout << "MbhY" << std::endl;
+		vectorInsert(transformData<MbhYGetter>(codebooks[4].get(), instance.second), feature);
 		// Write a line to output
 		outputFile.emplace(instance.first, feature);
-		writeFeaturesToFile(outputName, outputFile);
 	}
+	writeFeaturesToFile(outputName, outputFile);
+	return;
 }
 
 int main(int argc, char** argv) {
 	// Get all archive names in the specified folder
 	std::string archivesLocation = argv[1];
-	archivesLocation += "/Training/";
-	std::vector<std::string> archiveNames;
-	getArchiveNames(archivesLocation , archiveNames);
+
+	std::string trainingSetPath = archivesLocation + "/all/";
+	std::vector<std::string> trainingSetNames = getArchiveNames(trainingSetPath);
 
 	// Randomly sample some trajectories 
 	std::vector<track> samples(kNumRandomSamples);
 
-	getTrainingSamples(samples, archiveNames, archivesLocation);
+	getTrainingSamples(samples, trainingSetNames, trainingSetPath);
 
 	// Compute codebook from samples
 	std::cout << "Compute 5 codebooks" << std::endl;
 	std::vector<std::unique_ptr<VlKMeans>> codebooks;
-	codebooks.push_back(getCodebook<NormalizedPointGetter>(samples));
+	codebooks.push_back(getCodebook<DisplacementsGetter>(samples));
 	codebooks.push_back(getCodebook<HogGetter>(samples));
 	codebooks.push_back(getCodebook<HofGetter>(samples));
 	codebooks.push_back(getCodebook<MbhXGetter>(samples));
 	codebooks.push_back(getCodebook<MbhYGetter>(samples));
 
-	// Deal with training/test sets
-	ClassToFileNames classToFilenames = sortFilenamesByClass(archiveNames);
+	std::cout << "Generating training set" << std::endl;
+	generateFeatures(trainingSetNames, trainingSetPath, codebooks, "NoClustering/Features/HoG/TrainingSet.out");
 
-	std::vector<std::string> trainingSetFilenames = gatherTrainingSet(classToFilenames);
-	std::cout << "Generating features" << std::endl;
-	/* NaN checks for each file*/
-	generateFeatures(trainingSetFilenames, archivesLocation, codebooks, "NoClustering/Features/TrainingSet.out");
 	
-	}
+	/* Similar operation for test set*/
+	/*
+	std::cout << "Generating test set" << std::endl;
+	std::string testSetPath = archivesLocation + "/Test/";
+	std::vector<std::string> testSetNames = getArchiveNames(testSetPath);
+	generateFeatures(testSetNames, testSetPath, codebooks, "NoClustering/Features/HoG/TestSet.out");
+*/
 	return 0;
 }

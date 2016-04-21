@@ -55,7 +55,7 @@ void unnormalizePoints(std::vector<point>& points, const float trajectoryLength,
   for (int i = points.size() - 2; i >= 0; --i) points[i] = points[i + 1] - points[i];
   
   /*for (const auto& p : points) {
-    if (std::isnan(p.x) || std::isnan(p.y)) std::cout << "ARRRRRHHHHH" << std::endl;
+    if (!std::isfinite(p.x) || !std::isfinite(p.y)) std::cout << "ARRRRRHHHHH" << std::endl;
   }*/
 }
 
@@ -105,6 +105,18 @@ struct NormalizedPointGetter {
     return ret;
   }
   static constexpr int dimension = 32;
+};
+
+struct DisplacementsGetter {
+  std::vector<float> operator()(const track& t) {
+    std::vector<float> ret(2 * t.displacements.size());
+    for (size_t i = 0; i < t.displacements.size(); ++i) {
+      ret[2 * i] = t.displacements[i].x;
+      ret[2 * i + 1] = t.displacements[i].y;
+    }
+    return ret;
+  }
+  static constexpr int dimension = 30;
 };
 
 struct HogGetter {

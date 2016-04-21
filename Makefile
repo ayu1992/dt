@@ -24,8 +24,8 @@ TARGETS := DenseTrack Video
 BagOfWords: BagOfWords.cpp
 	g++ BagOfWords.cpp -o BagOfWords -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -I /home/hydralisk/Documents/vlfeat -L /home/hydralisk/Documents/vlfeat/bin/glnxa64/ -lvl -std=c++11
 
-locateNaN: locateNaN.cpp
-	g++ locateNaN.cpp -o locateNaN -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -std=c++11
+ChiSquaredSVM: ChiSquaredSVM.cpp
+	g++ ChiSquaredSVM.cpp -o ChiSquaredSVM -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -I /home/hydralisk/Documents/vlfeat -L /home/hydralisk/Documents/vlfeat/bin/glnxa64/ -lvl -std=c++11
 
 # DenseTrack -> Archive
 ParseTracks: ParseTracks.cpp
