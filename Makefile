@@ -1,6 +1,6 @@
 # set the binaries that have to be built
-#TARGETS := ShowTrajectories ConstructCodebook DumpDominantTrajectoryCluster LocalizationScoreForVideo DominantClusterFilter DrawClusters ClusterTracks DenseTrack Video
-TARGETS := DenseTrack Video
+#TARGETS := ShowTrajectories ConstructCodebook DumpDominantTrajectoryCluster LocalizationScoreForVideo DominantClusterFilter DrawClusters BuildGraph DenseTrack Video
+TARGETS := DrawClusters DrawTracks DenseTrack Video
 ################################## To be deprecated
 #DumpDominantTrajectoryCluster: DumpDominantTrajectoryCluster.cpp protoc_middleman
 #	pkg-config --cflags protobuf
@@ -27,13 +27,19 @@ BagOfWords: BagOfWords.cpp
 ChiSquaredSVM: ChiSquaredSVM.cpp
 	g++ ChiSquaredSVM.cpp -o ChiSquaredSVM -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -I /home/hydralisk/Documents/vlfeat -L /home/hydralisk/Documents/vlfeat/bin/glnxa64/ -lvl -std=c++11
 
+MergeTracks: MergeTracks.cpp
+	g++ MergeTracks.cpp -o MergeTracks -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -I /home/hydralisk/Documents/vlfeat -L /home/hydralisk/Documents/vlfeat/bin/glnxa64/ -lvl -std=c++11
+
 # DenseTrack -> Archive
 ParseTracks: ParseTracks.cpp
 	g++ ParseTracks.cpp -o ParseTracks -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -std=c++11
 
+GetCoordsForClusters: GetCoordsForClusters.cpp
+	g++ GetCoordsForClusters.cpp -o GetCoordsForClusters -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -std=c++11
+
 # DenseTrack -> Cluster tracks -> Archive
-ClusterTracks: ClusterTracks.cpp
-	g++ ClusterTracks.cpp -o ClusterTracks -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -std=c++11
+BuildGraph: BuildGraph.cpp
+	g++ BuildGraph.cpp -o BuildGraph -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -std=c++11
 
 DominantClusterFilter: DominantClusterFilter.cpp
 	g++ DominantClusterFilter.cpp -o DominantClusterFilter -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -std=c++11		

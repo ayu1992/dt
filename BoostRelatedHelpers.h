@@ -38,12 +38,16 @@ point operator-(const point& p1, const point& p2)
   return point(p1.x - p2.x, p1.y - p2.y);
 }
 
-// p *= 3
 point operator*(const point& p1, const float s)
 {
   return point(p1.x * s, p1.y * s);
-  // return point(p1) *= s;
 }
+
+point operator/(const point& p1, const float s)
+{
+  return point(p1.x / s, p1.y / s);
+}
+
 
 void unnormalizePoints(std::vector<point>& points, const float trajectoryLength, const float mean_x, const float mean_y) {
   for (point& p : points) p = p * trajectoryLength;
@@ -53,10 +57,6 @@ void unnormalizePoints(std::vector<point>& points, const float trajectoryLength,
     points.back() = points.back() + (points[i] * (static_cast<float>(i + 1) / points.size()));
   }
   for (int i = points.size() - 2; i >= 0; --i) points[i] = points[i + 1] - points[i];
-  
-  /*for (const auto& p : points) {
-    if (!std::isfinite(p.x) || !std::isfinite(p.y)) std::cout << "ARRRRRHHHHH" << std::endl;
-  }*/
 }
 
 struct track {
@@ -93,6 +93,10 @@ struct track {
   : endingFrame(endingFrame), mean_x(mean_x), mean_y(mean_y), var_x(var_x), var_y(var_y), 
   length(length), scale(scale), x_pos(x_pos), y_pos(y_pos), t_pos(t_pos), displacements(displacements), coords(coords), 
   hog(hog), hof(hof), mbhx(mbhx), mbhy(mbhy) {}
+
+  track(const track& t) : endingFrame(t.endingFrame), mean_x(t.mean_x), mean_y(t.mean_y), var_x(t.var_x), var_y(t.var_y), 
+  length(t.length), scale(t.scale), x_pos(t.x_pos), y_pos(t.y_pos), t_pos(t.t_pos), displacements(t.displacements), coords(t.coords), 
+  hog(t.hog), hof(t.hof), mbhx(t.mbhx), mbhy(t.mbhy) {}
 };
 
 struct NormalizedPointGetter {
@@ -277,4 +281,20 @@ void parseFeaturesToTracks(
     tracks.push_back(
       track(static_cast<int>(val[2]), val[3], val[4], val[5], val[6], val[7], val[8], val[9], val[10], val[11], displacements, coords, hog, hof, mbhx, mbhy));
   }
+}
+
+void writeCoordsToFile(const std::string& path, const trackList& tList ) {
+  std::ofstream ots(path + "UnnormalizedCoords.out");
+  {
+    for (const auto& trackIdTrackPair : tList.tracks()) {
+      const track& t = trackIdTrackPair.second;
+      ots << t.endingFrame << " ";
+      for (size_t i = 0; i < t.coords.size(); ++i) {
+        if ( i != 0) ots << " ";
+        ots << t.coords[i].x << " " << t.coords[i].y;
+      }
+      ots << std::endl;
+    }
+  }
+  ots.close();
 }

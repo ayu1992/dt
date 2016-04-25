@@ -1,6 +1,8 @@
 #include "ParserHelpers.h"
 #include "Descriptors.h"
 
+const int COORDS_LENGTH = 32;
+
 struct Box {
   Point2f UpperLeft;
   float width;
@@ -40,12 +42,12 @@ void unnormalizePoints(std::vector<Point2f>& points, const float trajectoryLengt
 }
 
 Scalar getRandomColor(void) {
-  int r = rand() % 255;
-    r = (r + 200) / 2;
+    int r = rand() % 255;
+    //r = (r + 300) / 2;
     int g = rand() % 255;
-    g = (g + 200) / 2;
+    //g = (g + 300) / 2;
     int b = rand() % 255;
-    b = (b + 200) / 2;
+   // b = (b + 300) / 2;
     return Scalar(r,g,b);
 }
 

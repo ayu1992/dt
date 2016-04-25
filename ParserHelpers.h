@@ -63,6 +63,7 @@ std::vector<float> split(const std::string& str, char delim) {
 }
 
 // traj id -> cid
+/*To be deprecated*/
 void readClusterId(const std::string& filename, std::unordered_map<int, int>& clusterId) {
   std::string line;
   std::ifstream fin(filename.c_str());
@@ -81,6 +82,27 @@ void readClusterId(const std::string& filename, std::unordered_map<int, int>& cl
   
   fin.close();
   return;
+}
+
+// clusterId : trajId -> cid
+std::unordered_map<int, int> readClusterId(const std::string& path) {
+  std::string line;
+  std::ifstream fin(path.c_str() + "result.txt");
+  if (!fin) {
+    std::cerr << "Unable to open file : " << filename << std::endl;
+  }
+
+  std::unordered_map<int, int> clusterId;
+  int cid, trajIndex = 0;
+  while (std::getline(fin, line)) {
+    std::istringstream iss(line);
+    iss >> cid;
+    clusterId.insert({trajIndex, cid});
+    trajIndex++;
+  }
+  
+  fin.close();
+  return clusterId;
 }
 
 int returnIdOfLargestCluster(const std::string& idFilename, std::unordered_map<int, int>& clusterId) {

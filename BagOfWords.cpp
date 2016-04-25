@@ -166,7 +166,6 @@ std::vector<int> quantize(VlKMeans* kmeans, const std::vector<track>& tracks) {
 	for (size_t ti = 0; ti < tracks.size(); ++ti) {
 		const track& t = tracks[ti];
 		float* centers = static_cast<float*>(kmeans->centers);						// centers is a 1D
-		//std::cout << "track #" << ti << std::endl;
 		const std::vector<float>& track_data = Functor()(t);		// ex. 96 x 1
 		float best_distance = computeDistance(track_data, centers, Functor::dimension);
 		int best_index = 0;
@@ -245,6 +244,7 @@ void generateFeatures(const std::vector<std::string>& filenames, const std::stri
 }
 
 int main(int argc, char** argv) {
+	// Takes in a grid config
 	// Get all archive names in the specified folder
 	std::string archivesLocation = argv[1];
 
@@ -256,9 +256,14 @@ int main(int argc, char** argv) {
 
 	getTrainingSamples(samples, trainingSetNames, trainingSetPath);
 
+	/* TODO: impl 30 channels*/
+
 	// Compute codebook from samples
-	std::cout << "Compute 5 codebooks" << std::endl;
 	std::vector<std::unique_ptr<VlKMeans>> codebooks;
+	// Split the samples
+
+	// Given some tracks, compute 5 x 4000
+	std::cout << "Compute codebooks for 5 channels" << std::endl;
 	codebooks.push_back(getCodebook<DisplacementsGetter>(samples));
 	codebooks.push_back(getCodebook<HogGetter>(samples));
 	codebooks.push_back(getCodebook<HofGetter>(samples));
@@ -266,7 +271,7 @@ int main(int argc, char** argv) {
 	codebooks.push_back(getCodebook<MbhYGetter>(samples));
 
 	std::cout << "Generating training set" << std::endl;
-	generateFeatures(trainingSetNames, trainingSetPath, codebooks, "NoClustering/Features/HoG/TrainingSet.out");
+	generateFeatures(trainingSetNames, trainingSetPath, codebooks, "NoClustering/Features/TrainingSet.out");
 
 	
 	/* Similar operation for test set*/
