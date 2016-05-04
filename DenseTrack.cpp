@@ -7,12 +7,8 @@
 
 using namespace cv;
 
-int show_track = 1; // set show_track = 1, if you want to visualize the trajectories
+int show_track = 0; // set show_track = 1, if you want to visualize the trajectories
 
-/**
- * TODO(ananyu): Install protocol buffer, dump output as pb's
- * 
- */
 int main(int argc, char** argv)
 {
 	VideoCapture capture;
@@ -25,12 +21,10 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-  /* Declare track and descriptor variables */
 	int frame_num = 0;
 	TrackInfo trackInfo;
 	DescInfo hogInfo, hofInfo, mbhInfo;
-  
-  /* Initialize trackInfor, hogInfo, hofInfo, mbhInfo, seqInfo*/
+
 	InitTrackInfo(&trackInfo, track_length, init_gap);
 	InitDescInfo(&hogInfo, 8, false, patch_size, nxy_cell, nt_cell);
 	InitDescInfo(&hofInfo, 9, true, patch_size, nxy_cell, nt_cell);
@@ -42,49 +36,42 @@ int main(int argc, char** argv)
 	if(flag)
 		seqInfo.length = end_frame - start_frame + 1;
 
-  fprintf(stderr, "video size, length: %d, width: %d, height: %d\n", seqInfo.length, seqInfo.width, seqInfo.height);
+//	fprintf(stderr, "video size, length: %d, width: %d, height: %d\n", seqInfo.length, seqInfo.width, seqInfo.height);
 
 	if(show_track == 1)
 		namedWindow("DenseTrack", 0);
-  
-  /* Declare image frames and some vectors*/
+
 	Mat image, prev_grey, grey;
 
-	std::vector<float> fscales(0);    // pyramid shrinking scales ex. 1.0, 0.8 ...
-	std::vector<Size> sizes(0);       // pyramid layer dimensions ex. (n1,m1), (n2, m2) ... 
+	std::vector<float> fscales(0);
+	std::vector<Size> sizes(0);
 
 	std::vector<Mat> prev_grey_pyr(0), grey_pyr(0), flow_pyr(0);
 	std::vector<Mat> prev_poly_pyr(0), poly_pyr(0); // for optical flow
 
-	std::vector<std::list<Track> > xyScaleTracks;     // each vector item : a list of Tracks from a pyramid layer 
+	std::vector<std::list<Track> > xyScaleTracks;
 	int init_counter = 0; // indicate when to detect new feature points
-	int frames = 0;
-  /* Frame-by-frame compuations */
-  while(true) {
+	while(true) {
 		Mat frame;
-		int i, c;
+		int i, j, c;
 
 		// get a new frame
 		capture >> frame;
-
-    // error handling
 		if(frame.empty())
 			break;
+
 		if(frame_num < start_frame || frame_num > end_frame) {
 			frame_num++;
 			continue;
 		}
 
-    // Processing start frame : manually set prev_grey and grey
 		if(frame_num == start_frame) {
 			image.create(frame.size(), CV_8UC3);
 			grey.create(frame.size(), CV_8UC1);
 			prev_grey.create(frame.size(), CV_8UC1);
-      
-      /* Dense sampling, calculate the pyramid scales and layer dimensions(sizes)*/
+
 			InitPry(frame, fscales, sizes);
-      
-      // Build empty spatial pyramids for different frames and array types
+
 			BuildPry(sizes, CV_8UC1, prev_grey_pyr);
 			BuildPry(sizes, CV_8UC1, grey_pyr);
 
@@ -92,14 +79,13 @@ int main(int argc, char** argv)
 			BuildPry(sizes, CV_32FC(5), prev_poly_pyr);
 			BuildPry(sizes, CV_32FC(5), poly_pyr);
 
-			xyScaleTracks.resize(scale_num);    // scale_num : pyramid height
+			xyScaleTracks.resize(scale_num);
 
 			frame.copyTo(image);
-			cvtColor(image, prev_grey, CV_BGR2GRAY);  // convert A to B's color space, code : colorspace conversion code
-  
-      // for each pyramid level, sample feature points and store them in xyScaleTracks
+			cvtColor(image, prev_grey, CV_BGR2GRAY);
+
 			for(int iScale = 0; iScale < scale_num; iScale++) {
-				if(iScale == 0)     // bottom level, dimension = frame's
+				if(iScale == 0)
 					prev_grey.copyTo(prev_grey_pyr[0]);
 				else
 					resize(prev_grey_pyr[iScale-1], prev_grey_pyr[iScale], prev_grey_pyr[iScale].size(), 0, 0, INTER_LINEAR);
@@ -108,10 +94,10 @@ int main(int argc, char** argv)
 				std::vector<Point2f> points(0);
 				DenseSample(prev_grey_pyr[iScale], points, quality, min_distance);
 
-				// save the feature points for a certain layer
-				//std::list<Track>& tracks = xyScaleTracks[iScale];
-				for(size_t i = 0; i < points.size(); i++)
-					xyScaleTracks[iScale].push_back(Track(points[i], trackInfo, hogInfo, hofInfo, mbhInfo));  // dummy histograms
+				// save the feature points
+				std::list<Track>& tracks = xyScaleTracks[iScale];
+				for(i = 0; i < points.size(); i++)
+					tracks.push_back(Track(points[i], trackInfo, hogInfo, hofInfo, mbhInfo));
 			}
 
 			// compute polynomial expansion
@@ -119,9 +105,8 @@ int main(int argc, char** argv)
 
 			frame_num++;
 			continue;
-		}  // end of start frame handling
+		}
 
-    // 1. rgb image -> grey image
 		init_counter++;
 		frame.copyTo(image);
 		cvtColor(image, grey, CV_BGR2GRAY);
@@ -176,8 +161,7 @@ int main(int argc, char** argv)
 				GetDesc(mbhMatY, rect, mbhInfo, iTrack->mbhY, index);
 				iTrack->addPoint(point);
 
-				// draw the trajectories on the first scale (on the original image)
-				// Points are not normalized yet!
+				// draw the trajectories at the first scale
 				if(show_track == 1 && iScale == 0)
 					DrawTrack(iTrack->point, iTrack->index, fscales[iScale], image);
 
@@ -190,7 +174,7 @@ int main(int argc, char** argv)
 					float mean_x(0), mean_y(0), var_x(0), var_y(0), length(0);
 					if(IsValid(trajectory, mean_x, mean_y, var_x, var_y, length)) {
 						printf("%d\t%d\t%d\t%f\t%f\t%f\t%f\t%f\t%f\t", seqInfo.width, seqInfo.height, frame_num, mean_x, mean_y, var_x, var_y, length, fscales[iScale]);
-						//printf("%d\t%f\t%f\t%f\t%f\t%f\t%f\t", frame_num, mean_x, mean_y, var_x, var_y, length, fscales[iScale]);
+
 						// for spatio-temporal pyramid
 						printf("%f\t", std::min<float>(std::max<float>(mean_x/float(seqInfo.width), 0), 0.999));
 						printf("%f\t", std::min<float>(std::max<float>(mean_y/float(seqInfo.height), 0), 0.999));
@@ -199,9 +183,7 @@ int main(int argc, char** argv)
 						// output the trajectory
 						for (int i = 0; i < trackInfo.length; ++i)
 							printf("%f\t%f\t", trajectory[i].x,trajectory[i].y);
-						
-						//std::cout << trajectory[i].x << trajectory[i].y << std::endl;
-
+		
 						PrintDesc(iTrack->hog, hogInfo, trackInfo);
 						PrintDesc(iTrack->hof, hofInfo, trackInfo);
 						PrintDesc(iTrack->mbhX, mbhInfo, trackInfo);
@@ -229,7 +211,7 @@ int main(int argc, char** argv)
 
 			DenseSample(grey_pyr[iScale], points, quality, min_distance);
 			// save the new feature points
-			for(size_t i = 0; i < points.size(); i++)
+			for(i = 0; i < points.size(); i++)
 				tracks.push_back(Track(points[i], trackInfo, hogInfo, hofInfo, mbhInfo));
 		}
 
@@ -241,13 +223,13 @@ int main(int argc, char** argv)
 		}
 
 		frame_num++;
+
 		if( show_track == 1 ) {
-			//imshow( "DenseTrack", image);
-			imwrite("demo/" + std::to_string(frames++) + ".png", image);
+			imshow( "DenseTrack", image);
 			c = cvWaitKey(3);
 			if((char)c == 27) break;
 		}
-	} // end of frame-by-frame computation
+	}
 
 	if( show_track == 1 )
 		destroyWindow("DenseTrack");

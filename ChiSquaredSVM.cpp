@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include <boost/algorithm/string.hpp>
 
-const int NUM_CHANNELS = 5;
+const int NUM_CHANNELS = 1;
 using Data = std::vector<std::vector<float>>;		// N x 4000
 
 // Read TrainingSet.out (N x 20000), TestSet.out (M x 20000)
@@ -12,7 +12,6 @@ using Data = std::vector<std::vector<float>>;		// N x 4000
 // 3. Hog (N x 4000) and (M x 4000) ...etc
 // Calculate Chi Squared matrices NxN and MxN
 // Output KernelTraining.out, KernelTest.out
-// And run the "svm-train -s 0 -t 4 KernelTraining.out kernel.model" ... procedures
 std::vector<float> parseLine(std::vector<std::string>::iterator& strs_it) {
 	std::vector<float> ret;  // TODO: If you know what size ret would be, maybe call vector::reserve.
 	std::string::size_type sz;
@@ -27,14 +26,15 @@ std::vector<float> parseLine(std::vector<std::string>::iterator& strs_it) {
 	return ret;
 }
 
+// this needs to support custom number of channels, same problem as BagOfWords.cpp?
 void parseDataSet(
-	const std::string& filename, 
-	Data& displacements, // N x 4000
-	Data& hog, 
-	Data& hof,
-	Data& mbhx, 
-	Data& mbhy, 
-	std::vector<int>& labels) {
+	const std::string& filename, Data& hog, std::vector<int>& labels) {
+//	Data& displacements, // N x 4000
+	 
+//	Data& hof,
+//	Data& mbhx, 
+//	Data& mbhy, 
+	
 
 	std::vector<std::string> lines;
 	readFileIntoStrings(filename, lines);
@@ -49,11 +49,11 @@ void parseDataSet(
 		labels.push_back(label);
 		++strs_it;
 
-		displacements.push_back(parseLine(strs_it));
+//		displacements.push_back(parseLine(strs_it));
 		hog.push_back(parseLine(strs_it));
-		hof.push_back(parseLine(strs_it));
-		mbhx.push_back(parseLine(strs_it));
-		mbhy.push_back(parseLine(strs_it));		
+//		hof.push_back(parseLine(strs_it));
+//		mbhx.push_back(parseLine(strs_it));
+//		mbhy.push_back(parseLine(strs_it));		
 	}
 }
 
@@ -82,7 +82,6 @@ float computeChiSquareDistance(const std::vector<float>& a, const std::vector<fl
 Data computeChiSquaredMatrix(const Data& testing, const Data& training, float& sum) {
 	const int M = testing.size();
 	const int N = training.size();
-	// TODO: maybe assign sum=0.0 here.
 
 	Data ret(M, std::vector<float>(N));
 	for (int i = 0; i < M; ++i) {
@@ -134,19 +133,19 @@ Data computeNormalizedChiSquareDistanceForTesting(
 Data buildKernelFromTrainingSet(
 	const std::string& filename, 
 	const float gamma,
-	Data& displacements, 
+//	Data& displacements, 
 	Data& hog, 
-	Data& hof, 
-	Data& mbhx, 
-	Data& mbhy, 
+//	Data& hof, 
+//	Data& mbhx, 
+//	Data& mbhy, 
 	std::vector<int>& labels, 
 	std::vector<float>& Ac) {
 
 	// Fill up the arrays
-	parseDataSet(filename, displacements, hog, hof, mbhx, mbhy, labels);
-	std::cout << "Parsing Complete" << std::endl;
+	//parseDataSet(filename, displacements, hog, hof, mbhx, mbhy, labels);
+	parseDataSet(filename, hog, labels);
 
-	const int N = displacements.size();	// N : number of training videos
+	const int N = hog.size();	// N : number of training videos
 
 	Data K(N, std::vector<float>(N, 0.0));
 
@@ -157,22 +156,21 @@ Data buildKernelFromTrainingSet(
 		}
 	};
 
-	//add_channel_to_chi_squares(displacements, 0);
-	add_channel_to_chi_squares(hog, 1);
-	//add_channel_to_chi_squares(hof, 2);
-	//add_channel_to_chi_squares(mbhx, 3);
-	//add_channel_to_chi_squares(mbhy, 4);
+//	add_channel_to_chi_squares(displacements, 0);
+	add_channel_to_chi_squares(hog, 0);
+//	add_channel_to_chi_squares(hof, 2);
+//	add_channel_to_chi_squares(mbhx, 3);
+//	add_channel_to_chi_squares(mbhy, 4);
 
 	for (int i = 0; i < N; ++i) {
 		for (int j = 0; j < N; ++j) K[i][j] = std::exp(-gamma * K[i][j]);
-		//for (int j = 0; j < N; ++j) K[i][j] = std::exp(-1 * K[i][j]);
 	}
-	std::cout << "Kernel calculation complete" << std::endl;
 	
 	return K;
 }
 
-// displacements, hog ... are from training set
+// I still need this function later to build test sets
+/*
 Data buildKernelForTestSet(
 	const std::string& filename,
 	const float gamma, 
@@ -217,14 +215,12 @@ Data buildKernelForTestSet(
 	std::cout << "Test Kernel calculation complete" << std::endl;
 	
 	return K;
-}
+}*/
 
 void writeKernel(const std::string& filepath, const Data& K, const int M, const int N, const std::vector<int>& labels) {
 	// Write Training Kernel
 	std::ofstream fout;
 	fout.open (filepath, std::fstream::in | std::fstream::out | std::fstream::app);
-	std::cout << "M : " << M << std::endl;
-	std::cout << "labels size : " << labels.size() << std::endl;
 	for (int i = 0; i < M; ++i) {
 		fout << labels[i] << " ";		// label
 		fout << "0:" << (i + 1);
@@ -235,18 +231,16 @@ void writeKernel(const std::string& filepath, const Data& K, const int M, const 
 	fout.close();
 }
 int main(int argc, char** argv) {
-	// I was trying to twist the Chi Squared form to : exp(- gamma * Dc)
-	// Dc term : see http://www.di.ens.fr/willow/events/cvml2011/materials/CVML2011_Cordelia_bof.pdf page 34
 	float gamma = static_cast<float>(std::atof(argv[1]));
-	std::cout << gamma << std::endl;
+
 	// Compute a chi-squared kernel over training set
 	Data displacements, hog, hof, mbhx, mbhy;
 	std::vector<int> train_labels, test_labels;
 
 	std::vector<float> Ac_training(5, 0.0);
 
-	Data train_K = buildKernelFromTrainingSet("NoClustering/Features/Displacements/TrainingSet.out", gamma, displacements, hog, hof, mbhx, mbhy, train_labels, Ac_training);	// N x N
-
+	//Data train_K = buildKernelFromTrainingSet("NoClustering/Features/HoG/TrainingSet.out", gamma, displacements, hog, hof, mbhx, mbhy, train_labels, Ac_training);	// N x N
+	Data train_K = buildKernelFromTrainingSet("NoClustering/Features/HoG/TrainingSet.out", gamma, hog, train_labels, Ac_training);	// N x N
 	writeKernel("NoClustering/Features/HoG/KernelTraining.txt", train_K, train_K.size(), train_K.size(), train_labels);
 	
 	//Data test_K = buildKernelForTestSet("NoClustering/Features/Displacements/TestSet.out", gamma, displacements, hog, hof, mbhx, mbhy, test_labels, Ac_training);

@@ -69,7 +69,7 @@ std::map<std::pair<int, int>, double> generateGraph(const std::vector<track>& tr
 
 void printDistanceMatrix(const std::string& filename, const std::map<std::pair<int, int>, double>& D, const int N) {
   std::ofstream fout;
-  std::cout << "[ClusterTracks] Opening output file : " << filename << std::endl;
+  std::cout << "[BuildGraph] Opening output file : " << filename << std::endl;
   fout.open(filename, std::ofstream::out);
   // [[trj 0's neighbors], [trj 1's neighbors], ..., [trj N-1's]]
   std::vector<std::vector<std::pair<int, double>>> neighbors(N);
@@ -119,7 +119,7 @@ int main(int argc, char** argv) {
   std::vector<std::string> trajInStrings;
   int videoWidth, videoHeight;
   parseFeaturesToTracks(inpath, trajInStrings, tracks, videoWidth, videoHeight); 
-  std::cout << "[ClusterTracks] "<< tracks.size() << " trajectories in total" << std::endl;
+  std::cout << "[BuildGraph] "<< tracks.size() << " trajectories in total" << std::endl;
 
   // Sort Tracks by ending frame for ease of graph construction
   std::sort(

@@ -5,17 +5,12 @@
 
 using namespace cv;
 
-/**
- * Defines setters for TrackInfo, DescMat, DescInfo, SeqInfo and argument parsing function.
- */
-// setter for TrackInfo
 void InitTrackInfo(TrackInfo* trackInfo, int track_length, int init_gap)
 {
 	trackInfo->length = track_length;
 	trackInfo->gap = init_gap;
 }
 
-// setter for DescMat
 DescMat* InitDescMat(int height, int width, int nBins)
 {
 	DescMat* descMat = (DescMat*)malloc(sizeof(DescMat));
@@ -29,14 +24,12 @@ DescMat* InitDescMat(int height, int width, int nBins)
 	return descMat;
 }
 
-// dter for DescMat
 void ReleDescMat(DescMat* descMat)
 {
 	free(descMat->desc);
 	free(descMat);
 }
 
-// setter for DescInfo
 void InitDescInfo(DescInfo* descInfo, int nBins, bool isHof, int size, int nxy_cell, int nt_cell)
 {
 	descInfo->nBins = nBins;
@@ -49,20 +42,18 @@ void InitDescInfo(DescInfo* descInfo, int nBins, bool isHof, int size, int nxy_c
 	descInfo->width = size;
 }
 
-// Count the number of frames in the video and frame dimensions
-// Set the information in SeqInfo
 void InitSeqInfo(SeqInfo* seqInfo, char* video)
 {
 	VideoCapture capture;
 	capture.open(video);
 
-	Mat frame;
 	if(!capture.isOpened())
-		fprintf(stderr, "InitSeqInfo: Could not initialize capturing..\n");
+		fprintf(stderr, "Could not initialize capturing..\n");
 
 	// get the number of frames in the video
-	int frame_num = 0;	
-  while(true) {
+	int frame_num = 0;
+	while(true) {
+		Mat frame;
 		capture >> frame;
 
 		if(frame.empty())
@@ -95,7 +86,6 @@ void usage()
 	fprintf(stderr, "  -I [initial gap]          The gap for re-sampling feature points (default: 1 frame)\n");
 }
 
-// returns true if user specifies start/end frame
 bool arg_parse(int argc, char** argv)
 {
 	int c;

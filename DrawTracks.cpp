@@ -1,11 +1,10 @@
 #include "cvRelatedHelpers.h"
-#define VISUALIZE
+//#define VISUALIZE
 using namespace cv;
 
 void parseAndDraw(
 	const std::vector<std::string> trjInStrings,
-	std::vector<Mat>& frames,
-	const std::vector<Box>& boxes) {
+	std::vector<Mat>& frames) {
 
 	for (const auto& str : trjInStrings) {
 		std::vector<float> vals = split(str, ' ');
@@ -48,13 +47,15 @@ int main(int argc, char** argv) {
 
     std::string inpath = argv[2];	// location of video
 
+    std::string videoClass = argv[3];
+
 	int vid;
-	std::istringstream getVid(argv[3]);
+	std::istringstream getVid(argv[4]);
     getVid >> vid;
 
 	// Open Video to read
 	VideoCapture capture;
-	std::string video = inpath + std::to_string(vid) + ".avi";
+	std::string video = inpath + std::to_string(vid) + ".vob";
 	capture.open(video.c_str());
 
 	if(!capture.isOpened()) {
@@ -83,18 +84,18 @@ int main(int argc, char** argv) {
 		frames.push_back(image);
 	}
 
-	std::cout << "Reading bounding boxes" << std::endl;
- 	std::vector<Box> boxes = readBoundingBoxes(inpath + std::to_string(vid) + ".txt");
+	//std::cout << "Reading bounding boxes" << std::endl;
+ 	//std::vector<Box> boxes = readBoundingBoxes(inpath + std::to_string(vid) + ".txt");
 
     // Draw circles on the frames
 	std::cout << "[DrawClusters] Drawing circles" << std::endl;
 	std::cout << frames.size() << "Frames in total" << std::endl;
-	parseAndDraw(trjInStrings, frames, boxes);
+	parseAndDraw(trjInStrings, frames);
 
 	std::cout << "[DrawClusters] Writing videos" << std::endl;
 	// Open video to write
 	createVideoFromImages(
-		outPath + std::to_string(vid) + ".avi", 
+		outPath + videoClass + "_" + std::to_string(vid) + ".avi", 
 		capture.get(CV_CAP_PROP_FOURCC), 
 		10,
 		Size(capture.get(CV_CAP_PROP_FRAME_WIDTH), capture.get(CV_CAP_PROP_FRAME_HEIGHT)), frames);

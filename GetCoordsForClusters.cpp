@@ -3,14 +3,15 @@
 // ClusteredTrajectories/r=2/c=500/ 
 int main(int argc, char** argv) {
 	// path to sortedTrajecotries and result.txt
-	std::string inpath = argv[1];		
+	std::string graphPath = argv[1];		
+	std::string clusterResultPath = argv[2];
 	// Reads result.txt, sortedTrajectories.out
-	std::unordered_map<int, int> clusterId = readClusterId(inpath + "result.txt");
+	std::unordered_map<int, int> clusterId = readClusterId(clusterResultPath);
 
 	trackList tList;
-	restoreTrackList(inpath + "sortedTrajectories.out", tList);		
+	restoreTrackList(graphPath + "sortedTrajectories.out", tList);		
 
-	std::ofstream ots(inpath + "granularTracksUnnormalizedCoords.out");
+	std::ofstream ots(clusterResultPath + "granularUnnormalizedCoords.out");
 	{
 	  for (const auto& trackIdTrackPair : tList.tracks()) {
 	    const track& t = trackIdTrackPair.second;

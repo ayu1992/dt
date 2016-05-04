@@ -19,17 +19,17 @@ const int MBHY_DIM = 96;
 std::map<std::string, int> ucfActionClassMap {
   {"Diving-Side", 0},
   {"Golf-Swing-Back", 1},
-  {"Golf-Swing-Side", 2},
-  {"Kicking-Front", 3},
-  {"Kicking-Side", 4},
-  {"Lifting", 5},
-  {"Riding-Horse", 6},
-  {"Run-Side", 7},
-  {"SkateBoarding-Front", 8},
-  {"Swing-Bench", 9},
-  {"Swing-SideAngle", 10},
-  {"Walk-Front", 11},
-  {"Golf-Swing-Front", 12}
+  {"Golf-Swing-Side", 1},
+  {"Kicking-Front", 2},
+  {"Kicking-Side", 2},
+  {"Lifting", 3},
+  {"Riding-Horse", 4},
+  {"Run-Side", 5},
+  {"SkateBoarding-Front", 6},
+  {"Swing-Bench", 7},
+  {"Swing-SideAngle", 8},
+  {"Walk-Front", 9},
+  {"Golf-Swing-Front", 1}
 };
 
 std::map<std::string, int> OlympicActionClassMap {
@@ -85,15 +85,15 @@ void readClusterId(const std::string& filename, std::unordered_map<int, int>& cl
 }
 
 // clusterId : trajId -> cid
-std::unordered_map<int, int> readClusterId(const std::string& path) {
-  std::string line;
-  std::ifstream fin(path.c_str() + "result.txt");
+std::unordered_map<int, int> readClusterId(const std::string path) {
+  std::ifstream fin((path + "result.txt").c_str());
   if (!fin) {
-    std::cerr << "Unable to open file : " << filename << std::endl;
+    std::cerr << "Thrown by readClusterId, Unable to open file : " << std::endl;
   }
 
   std::unordered_map<int, int> clusterId;
   int cid, trajIndex = 0;
+  std::string line;
   while (std::getline(fin, line)) {
     std::istringstream iss(line);
     iss >> cid;

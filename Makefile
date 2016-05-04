@@ -1,28 +1,12 @@
-# set the binaries that have to be built
-#TARGETS := ShowTrajectories ConstructCodebook DumpDominantTrajectoryCluster LocalizationScoreForVideo DominantClusterFilter DrawClusters BuildGraph DenseTrack Video
+# set the binaries that need to be built
 TARGETS := DrawClusters DrawTracks DenseTrack Video
-################################## To be deprecated
-#DumpDominantTrajectoryCluster: DumpDominantTrajectoryCluster.cpp protoc_middleman
-#	pkg-config --cflags protobuf
-#	c++ DumpDominantTrajectoryCluster.cpp dump.pb.cpp -o DumpDominantTrajectoryCluster -std=c++11 `pkg-config --cflags --libs protobuf`
-
-#ConstructCodebook: ConstructCodebook.cpp protoc_middleman
-#	pkg-config --cflags protobuf
-#	c++ ConstructCodebook.cpp dump.pb.cpp -o ConstructCodebook -std=c++11 -I /home/pighead/Documents/vlfeat -L /home/pighead/Documents/vlfeat/bin/glnxa64/ -lvl `pkg-config --cflags --libs protobuf`	
-
-#DenseTrackToProto: DenseTrackToProto.cpp protoc_middleman
-#	pkg-config --cflags protobuf
-#	c++ DenseTrackToProto.cpp dump.pb.cpp -o DenseTrackToProto -std=c++11 `pkg-config --cflags --libs protobuf`		
-
-#ShowTrajectories: ShowTrajectories.cpp protoc_middleman
-#	pkg-config --cflags protobuf
-#	c++ ShowTrajectories.cpp dump.pb.cpp -o ShowTrajectories -std=c++11 `pkg-config --cflags --libs protobuf`
-############################################
-# Multiple Archives -> Codeook and features
 
 # Archive -> BoW
 BagOfWords: BagOfWords.cpp
 	g++ BagOfWords.cpp -o BagOfWords -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -I /home/hydralisk/Documents/vlfeat -L /home/hydralisk/Documents/vlfeat/bin/glnxa64/ -lvl -std=c++11
+
+AugmentClassLabels: AugmentClassLabels.cpp
+	g++ AugmentClassLabels.cpp -o AugmentClassLabels -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -std=c++11
 
 ChiSquaredSVM: ChiSquaredSVM.cpp
 	g++ ChiSquaredSVM.cpp -o ChiSquaredSVM -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -I /home/hydralisk/Documents/vlfeat -L /home/hydralisk/Documents/vlfeat/bin/glnxa64/ -lvl -std=c++11
@@ -46,7 +30,6 @@ DominantClusterFilter: DominantClusterFilter.cpp
 
 LocalizationScoreForVideo: LocalizationScoreForVideo.cpp
 	g++ LocalizationScoreForVideo.cpp -o LocalizationScoreForVideo -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -std=c++11	
-
 
 # set the build configuration set 
 BUILD := release

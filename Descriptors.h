@@ -76,7 +76,7 @@ void GetDesc(const DescMat* descMat, RectInfo& rect, DescInfo descInfo, std::vec
 {
 	int dim = descInfo.dim;
 	int nBins = descInfo.nBins;
-	//int height = descMat->height;
+	int height = descMat->height;
 	int width = descMat->width;
 
 	int xStride = rect.width/descInfo.nxCells;
@@ -213,11 +213,8 @@ void DenseSample(const Mat& grey, std::vector<Point2f>& points, const double qua
 	int x_max = min_distance*width;
 	int y_max = min_distance*height;
 
-  //for (auto it = points.begin(), end = points.end(); it != end; ++it) {
-	//for(int i = 0; i < points.size(); i++) {
-	//for (std::size_t i = 0; max = points.size(); i!=max; ++i) {
-  for (size_t i = 0; i < points.size(); i++) {
-  	Point2f point = points[i];
+	for(int i = 0; i < points.size(); i++) {
+		Point2f point = points[i];
 		int x = cvFloor(point.x);
 		int y = cvFloor(point.y);
 
@@ -244,32 +241,24 @@ void DenseSample(const Mat& grey, std::vector<Point2f>& points, const double qua
 	}
 }
 
-/**
- * Dense Sampling : compute pyramid scales and dimensions 
- * frame : freshly read in from capture
- * scales : a vector of 0s -> pyramid shrinking scales
- * sizes : N,M dimensions for each layer of the pyramid 
- */
 void InitPry(const Mat& frame, std::vector<float>& scales, std::vector<Size>& sizes)
 {
-	int rows = frame.rows, cols = frame.cols;   // rows, cols : video frame dimensions
-	float min_size = std::min<int>(rows, cols); // min_size : minimum dimension
+	int rows = frame.rows, cols = frame.cols;
+	float min_size = std::min<int>(rows, cols);
 
 	int nlayers = 0;
-  
-  // calculate how many layers can we make
-	while(min_size >= patch_size) {       // patch_size: a param for descriptors, val = 32
+	while(min_size >= patch_size) {
 		min_size /= scale_stride;
 		nlayers++;
 	}
+
 	if(nlayers == 0) nlayers = 1; // at least 1 scale 
 
-  // resize scales and sizes to the minimum pyramid height
-	scale_num = std::min<int>(scale_num, nlayers);    // initially scale_num = 8 
+	scale_num = std::min<int>(scale_num, nlayers);
+
 	scales.resize(scale_num);
 	sizes.resize(scale_num);
 
-  // first elements represent the original dimension
 	scales[0] = 1.;
 	sizes[0] = Size(cols, rows);
 
@@ -279,12 +268,6 @@ void InitPry(const Mat& frame, std::vector<float>& scales, std::vector<Size>& si
 	}
 }
 
-/**
- * Dense Sampling : initialize the pyramids to empty Mat
- * sizes : a vector of pyramid layer dimensions (N, M), read-only
- * type : array type ex. single or double channel array
- * grey_pyr : Build a pyramid of #sizes empty layers and return 
- **/
 void BuildPry(const std::vector<Size>& sizes, const int type, std::vector<Mat>& grey_pyr)
 {
 	int nlayers = sizes.size();
@@ -306,15 +289,14 @@ void DrawTrack(const std::vector<Point2f>& point, const int index, const float s
 		line(image, point0, point1, Scalar(0,cvFloor(255.0*(j+1.0)/float(index+1.0)),0), 2, 8, 0);
 		point0 = point1;
 	}
-	// why just one circle?
 	circle(image, point0, 2, Scalar(0,0,255), -1, 8, 0);
 }
 
 void PrintDesc(std::vector<float>& desc, DescInfo& descInfo, TrackInfo& trackInfo)
 {
-	int tStride = cvFloor(trackInfo.length/descInfo.ntCells);  // tStride : length of each cell in t-axis
+	int tStride = cvFloor(trackInfo.length/descInfo.ntCells);
 	float norm = 1./float(tStride);
-	int dim = descInfo.dim;   // nBins*nxy_cell*nxy_cell
+	int dim = descInfo.dim;
 	int pos = 0;
 	for(int i = 0; i < descInfo.ntCells; i++) {
 		std::vector<float> vec(dim);

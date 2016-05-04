@@ -39,18 +39,6 @@ int main(int argc, char** argv) {
 
 	// Generate text output for DrawCluster (requires to be linked with opencv)
 	// endingFrame, coords
-	std::ofstream ots(path + "UnnormalizedCoords.out");
-	{
-		for (const auto& trackIdTrackPair : filteredTList.tracks()) {
-			const track& t = trackIdTrackPair.second;
-			ots << t.endingFrame << " ";
-			for (size_t i = 0; i < t.coords.size(); ++i) {
-				if ( i != 0) ots << " ";
-				ots << t.coords[i].x << " " << t.coords[i].y;
-			}
-			ots << std::endl;
-		}
-	}
-	ots.close();
+	writeCoordsToFile(path, filteredTList);
 	return 0;
 }

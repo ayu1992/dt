@@ -1,9 +1,10 @@
-#include <limits>       // std::numeric_limits
-#include <random>
-#include <ctime>        // std::time
-#include <cstdlib>      // std::rand, std::srand
 #include "BoostRelatedHelpers.h"
+#include <ctime> 
 #include <dirent.h>
+#include <limits>
+#include <random>
+
+// Needed these lines to work with vlfeat
 extern "C" {
   #include <vl/generic.h>
 }
@@ -211,7 +212,6 @@ void writeFeaturesToFile(const std::string& filename, const std::multimap<int, s
 	fout.close();
 }
 
-// Insert all items in `a` to b.end().
 template <typename T>
 void vectorInsert(const std::vector<T>& a, std::vector<T>& b) {
 	b.insert(b.end(), a.begin(), a.end());
@@ -225,17 +225,17 @@ void generateFeatures(const std::vector<std::string>& filenames, const std::stri
 	for (const auto& instance : videos) {	// Each instance corresponds to a video
 		if (instance.second.empty())	continue;
 		std::cout << instance.second.size() << " tracks" << std::endl;
-		std::cout << "Displacements" << std::endl;
-		std::vector<float> feature = transformData<DisplacementsGetter>(codebooks[0].get(), instance.second);
+		//std::cout << "Displacements" << std::endl;
+		//std::vector<float> feature = transformData<DisplacementsGetter>(codebooks[0].get(), instance.second);
 		std::cout << "Hog" << std::endl;
-		//std::vector<float> feature = transformData<HogGetter>(codebooks[0].get(), instance.second);
-		vectorInsert(transformData<HogGetter>(codebooks[1].get(), instance.second), feature);
-		std::cout << "Hof" << std::endl;
-		vectorInsert(transformData<HofGetter>(codebooks[2].get(), instance.second), feature);
-		std::cout << "MbhX" << std::endl;
-		vectorInsert(transformData<MbhXGetter>(codebooks[3].get(), instance.second), feature);
-		std::cout << "MbhY" << std::endl;
-		vectorInsert(transformData<MbhYGetter>(codebooks[4].get(), instance.second), feature);
+		//vectorInsert(transformData<HogGetter>(codebooks[1].get(), instance.second), feature);
+		std::vector<float> feature = transformData<HogGetter>(codebooks[0].get(), instance.second);
+		//std::cout << "Hof" << std::endl;
+		//vectorInsert(transformData<HofGetter>(codebooks[2].get(), instance.second), feature);
+		//std::cout << "MbhX" << std::endl;
+		//vectorInsert(transformData<MbhXGetter>(codebooks[3].get(), instance.second), feature);
+		//std::cout << "MbhY" << std::endl;
+		//vectorInsert(transformData<MbhYGetter>(codebooks[4].get(), instance.second), feature);
 		// Write a line to output
 		outputFile.emplace(instance.first, feature);
 	}
@@ -243,12 +243,17 @@ void generateFeatures(const std::vector<std::string>& filenames, const std::stri
 	return;
 }
 
+/* TODO(yuchi): What's a good interface design to let this binary take some channels and compute away? 
+ * My idea: enum DISPLACEMENTS, HOG, HOF, MBHX, ..   
+   ./BagOfWords DISPLACEMENTS HOG
+ * not sure if this a good design, definitely no clue how to implement XD
+*/
 int main(int argc, char** argv) {
-	// Takes in a grid config
+
 	// Get all archive names in the specified folder
 	std::string archivesLocation = argv[1];
 
-	std::string trainingSetPath = archivesLocation + "/all/";
+	std::string trainingSetPath = archivesLocation;
 	std::vector<std::string> trainingSetNames = getArchiveNames(trainingSetPath);
 
 	// Randomly sample some trajectories 
@@ -256,22 +261,20 @@ int main(int argc, char** argv) {
 
 	getTrainingSamples(samples, trainingSetNames, trainingSetPath);
 
-	/* TODO: impl 30 channels*/
-
 	// Compute codebook from samples
 	std::vector<std::unique_ptr<VlKMeans>> codebooks;
 	// Split the samples
 
 	// Given some tracks, compute 5 x 4000
 	std::cout << "Compute codebooks for 5 channels" << std::endl;
-	codebooks.push_back(getCodebook<DisplacementsGetter>(samples));
+	//codebooks.push_back(getCodebook<DisplacementsGetter>(samples));
 	codebooks.push_back(getCodebook<HogGetter>(samples));
-	codebooks.push_back(getCodebook<HofGetter>(samples));
-	codebooks.push_back(getCodebook<MbhXGetter>(samples));
-	codebooks.push_back(getCodebook<MbhYGetter>(samples));
+	//codebooks.push_back(getCodebook<HofGetter>(samples));
+	//codebooks.push_back(getCodebook<MbhXGetter>(samples));
+	//codebooks.push_back(getCodebook<MbhYGetter>(samples));
 
 	std::cout << "Generating training set" << std::endl;
-	generateFeatures(trainingSetNames, trainingSetPath, codebooks, "NoClustering/Features/TrainingSet.out");
+	generateFeatures(trainingSetNames, trainingSetPath, codebooks, "NoClustering/Features/HoG/TrainingSet.out");
 
 	
 	/* Similar operation for test set*/

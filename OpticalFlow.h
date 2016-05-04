@@ -9,7 +9,7 @@ using namespace cv;
 
 namespace my
 {
-// ? what is it doing to dst?
+
 static void
 FarnebackPolyExp( const Mat& src, Mat& dst, int n, double sigma )
 {
@@ -408,33 +408,29 @@ void MedianBlurFlow(Mat& flow, const int ksize)
 	merge(channels, 2, flow);
 }
 
-/**
- * poly_exp_pyr: pyramid with empty layers
- */
 void FarnebackPolyExpPyr(const Mat& img, std::vector<Mat>& poly_exp_pyr,
 						 std::vector<float>& fscales, int poly_n, double poly_sigma)
 {
     Mat fimg;
-    // for each level of the pyramid
+
     for(int k = 0; k < poly_exp_pyr.size(); k++)
     {
         double sigma = (fscales[k]-1)*0.5;
         int smooth_sz = cvRound(sigma*5)|1;
         smooth_sz = std::max(smooth_sz, 3);
-        // layer dimension
+
         int width = poly_exp_pyr[k].cols;
         int height = poly_exp_pyr[k].rows;
 
         Mat R, I;
 
-		    img.convertTo(fimg, CV_32F);
-		    GaussianBlur(fimg, fimg, Size(smooth_sz, smooth_sz), sigma, sigma);
-	      // I : img blurred and shrinked
-        resize(fimg, I, Size(width, height), CV_INTER_LINEAR);
-        // compute 
-		    FarnebackPolyExp(I, R, poly_n, poly_sigma);
-		    R.copyTo(poly_exp_pyr[k]);
-  	}
+		img.convertTo(fimg, CV_32F);
+		GaussianBlur(fimg, fimg, Size(smooth_sz, smooth_sz), sigma, sigma);
+	    resize(fimg, I, Size(width, height), CV_INTER_LINEAR);
+
+		FarnebackPolyExp(I, R, poly_n, poly_sigma);
+		R.copyTo(poly_exp_pyr[k]);
+	}
 }
 
 void calcOpticalFlowFarneback(std::vector<Mat>& prev_poly_exp_pyr, std::vector<Mat>& poly_exp_pyr,

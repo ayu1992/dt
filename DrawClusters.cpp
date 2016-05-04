@@ -5,7 +5,6 @@ using namespace cv;
 void parseAndDraw(
 	const std::vector<std::string> trjInStrings,
 	std::vector<Mat>& frames,
-	const std::vector<Box>& boxes, 
 	const std::vector<Scalar>& clusterColors) {
 
 	for (const auto& str : trjInStrings) {
@@ -34,16 +33,19 @@ int main(int argc, char** argv) {
 
 	// Doesn't require trajectories to be sorted
 	std::vector<std::string> trjInStrings;
-	readFileIntoStrings(path + "granularTracksUnnormalizedCoords.out", trjInStrings);
+	readFileIntoStrings(path + "granularUnnormalizedCoords.out", trjInStrings);
 
     std::string videoPath = argv[2];	// location of video
+    std::cout << "Reading video" << std::endl;
+
+    std::string videoClass = argv[3];	// for use of output only
 
 	int vid;
-	std::istringstream getVid(argv[3]);
+	std::istringstream getVid(argv[4]);
     getVid >> vid;
 
     int numClusters;
-	std::istringstream getNumClusters(argv[4]);
+	std::istringstream getNumClusters(argv[5]);
     getNumClusters >> numClusters;
 
     std::vector<Scalar> clusterColors(numClusters);
@@ -51,7 +53,8 @@ int main(int argc, char** argv) {
 
 	// Open Video to read
 	VideoCapture capture;
-	std::string video = videoPath + std::to_string(vid) + ".avi";
+	std::string video = videoPath + std::to_string(vid) + ".vob";
+	std::cout << video << std::endl;
 	capture.open(video.c_str());
 
 	if(!capture.isOpened()) {
@@ -80,18 +83,18 @@ int main(int argc, char** argv) {
 		frames.push_back(image);
 	}
 
-	std::cout << "Reading bounding boxes" << std::endl;
- 	std::vector<Box> boxes = readBoundingBoxes(videoPath + std::to_string(vid) + ".txt");
+	//std::cout << "Reading bounding boxes" << std::endl;
+ 	//std::vector<Box> boxes = readBoundingBoxes(videoPath + std::to_string(vid) + ".txt");
 
     // Draw circles on the frames
 	std::cout << "[DrawClusters] Drawing circles" << std::endl;
 	std::cout << frames.size() << "Frames in total" << std::endl;
-	parseAndDraw(trjInStrings, frames, boxes, clusterColors);
+	parseAndDraw(trjInStrings, frames, clusterColors);
 
 	std::cout << "[DrawClusters] Writing videos" << std::endl;
 	// Open video to write
 	createVideoFromImages(
-		path + "rawTracks_" + std::to_string(vid) + ".avi", 
+		path + "rawTracks_" + videoClass + "_" + std::to_string(vid) + ".avi", 
 		capture.get(CV_CAP_PROP_FOURCC), 
 		10,
 		Size(capture.get(CV_CAP_PROP_FRAME_WIDTH), capture.get(CV_CAP_PROP_FRAME_HEIGHT)), frames);
