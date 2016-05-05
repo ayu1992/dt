@@ -1,8 +1,9 @@
 DATASET="UCFSports/"
 declare -A CATEGORIES
 #CATEGORIES=(['Diving-Side']=14 ['Golf-Swing-Back']=5 ['Golf-Swing-Side']=5 ['Kicking-Front']=10 ['Kicking-Side']=10 ['Lifting']=6 ['Riding-Horse']=12 ['Run-Side']=13 ['SkateBoarding-Front']=12 ['Swing-Bench']=20 ['Swing-SideAngle']=13 ['Walk-Front']=22)
-CATEGORIES=(['Diving-Side']=1)
+CATEGORIES=(['Diving-Side']=2)
 RESOLUTION=$DATASET"original/"
+EXTRACTION="idt/"
 
 rm BuildGraph
 rm MergeTracks
@@ -25,21 +26,21 @@ for CATEGORY in "${!CATEGORIES[@]}"			# '!' expands keys, no '!' expands values
 do
 	for ((vid=1; vid <= ${CATEGORIES[$CATEGORY]}; vid++))
 	do 
-		for PARAM_R in 1
+		for PARAM_R in 0.0005 0.005 0.05 0.5
 		do 
 			GRAPH_PATH="ClusteredTrajectories/r="$PARAM_R"/"
 			mkdir -p $GRAPH_PATH								# No op if the folder already exists
 
-			VIDEO_NAME=$RESOLUTION$CATEGORY"/"$vid".features"
+			VIDEO_NAME=$RESOLUTION$CATEGORY"/"$EXTRACTION$vid".features"
 			
 			echo "Processing "$VIDEO_NAME
-			rm $GRAPH_PATH"dij.txt"
-			rm $GRAPH_PATH"sortedTrajectories.out"
+#			rm $GRAPH_PATH"dij.txt"
+#			rm $GRAPH_PATH"sortedTrajectories.out"
 
-			./BuildGraph $VIDEO_NAME $GRAPH_PATH $PARAM_R
-			mpiexec -n 2 ../pspectralclustering/distance_to_similarity --input $GRAPH_PATH"dij.txt" --output $GRAPH_PATH"similarity.txt"
+			./BuildGraph $VIDEO_NAME $GRAPH_PATH $CATEGORY$vid $PARAM_R
+			mpiexec -n 2 ../pspectralclustering/distance_to_similarity --input $GRAPH_PATH$CATEGORY$vid"_dij.txt" --output $GRAPH_PATH"similarity.txt"
 
-			for NUM_CLUSTERS in 5
+			for NUM_CLUSTERS in 500 600 700
 			do
 				# Output location
 				OUT_PATH=$GRAPH_PATH"c="$NUM_CLUSTERS"/"					
@@ -54,16 +55,15 @@ do
 				mpiexec -n 10 ../pspectralclustering/evd --arpack_iterations 1000 --arpack_tolerance 0.000001 --eigenvalue $NUM_CLUSTERS --eigenspace $NUM_SPACE --input $GRAPH_PATH"similarity.txt" --eigenvalues_output $OUT_PATH"eigenvalues.txt" --eigenvectors_output $OUT_PATH"eigenvectors.txt"
 				mpiexec -n 4 ../pspectralclustering/kmeans --num_clusters $NUM_CLUSTERS --input $OUT_PATH"eigenvectors.txt" --output $OUT_PATH"result.txt"
 							
-				./GetCoordsForClusters $GRAPH_PATH $OUT_PATH
-
 				# Visualize partition quality
-				./DrawClusters $OUT_PATH $RESOLUTION$CATEGORY"/" $CATEGORY $vid $NUM_CLUSTERS
+				#./GetCoordsForClusters $GRAPH_PATH $OUT_PATH
+				#./DrawClusters $OUT_PATH $RESOLUTION$CATEGORY"/" $CATEGORY $vid $NUM_CLUSTERS
 								
 				# Supertracks
-				./MergeTracks $GRAPH_PATH $OUT_PATH $NUM_CLUSTERS $CATEGORY$vid
+				./MergeTracks $GRAPH_PATH $OUT_PATH $NUM_CLUSTERS $CATEGORY $vid
 								
 				# Visualize super tracks
-				./DrawTracks $OUT_PATH $RESOLUTION$CATEGORY"/" $CATEGORY $vid
+				#./DrawTracks $OUT_PATH $RESOLUTION$CATEGORY"/" $CATEGORY $vid
 			done
 		done
 	done

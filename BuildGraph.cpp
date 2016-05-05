@@ -107,18 +107,19 @@ void printDistanceMatrix(const std::string& filename, const std::map<std::pair<i
 
 int main(int argc, char** argv) {
 
-  std::string inpath = argv[1];
-  std::string dumppath = argv[2];
+  std::string videoPath = argv[1];    // Location of trajectories
+  std::string outputPath = argv[2];   // Location to write sortedTrajectories
+  std::string videoName = argv[3];
 
   float r;
-  std::istringstream getGamma(argv[3]);
+  std::istringstream getGamma(argv[4]);
   getGamma >> r;
 
   // Read and pack feature dump into Tracks(temporary container)
   std::vector<track> tracks; 
   std::vector<std::string> trajInStrings;
   int videoWidth, videoHeight;
-  parseFeaturesToTracks(inpath, trajInStrings, tracks, videoWidth, videoHeight); 
+  parseFeaturesToTracks(videoPath, trajInStrings, tracks, videoWidth, videoHeight); 
   std::cout << "[BuildGraph] "<< tracks.size() << " trajectories in total" << std::endl;
 
   // Sort Tracks by ending frame for ease of graph construction
@@ -134,7 +135,7 @@ int main(int argc, char** argv) {
   // [[trj 0's neighbors], [trj 1's neighbors], ..., [trj N-1's]]
   
   // Output s_ij for spectral clustering
-  printDistanceMatrix(dumppath + "dij.txt", D, tracks.size());
+  printDistanceMatrix(outputPath + videoName + "_dij.txt", D, tracks.size());
   
   trackList tList;
   int index = 0;
@@ -144,7 +145,7 @@ int main(int argc, char** argv) {
     index++;
   }
   
-  std::ofstream ofs(dumppath + "sortedTrajectories.out");
+  std::ofstream ofs(outputPath + videoName + "_sortedTrajectories.out");
   // save data to archive
   {
       boost::archive::binary_oarchive oa(ofs);

@@ -99,14 +99,14 @@ std::pair<int, float> parseIntoPair(const std::string& s) {
 }
 
 Edges computeEdgeWeights(
-	const std::string& dijPath,
+	const std::string& filename,
     const std::unordered_map<int, int>& clusterId,
     int C) {
 
 	Edges ret(C, std::vector<float>(C, 0));
 	
 	std::vector<std::string> lines;
-	readFileIntoStrings(dijPath + "dij.txt", lines);
+	readFileIntoStrings(filename, lines);
 	std::string::size_type sz;
 	const size_t num_lines = lines.size();
 	
@@ -172,20 +172,21 @@ void writeSuperTracksToFile(const std::string& path, const trackList& superTrack
 // Reads NxN and returns CxC
 int main(int argc, char** argv) {
 
-	// TODO: read category and vid
 	// path to sortedTrajecotries and result.txt
 	const std::string primitiveGraphPath = argv[1];	
 	const std::string clusterResultPath = argv[2];	
 	const int numClusters = std::stoi(argv[3]);
-	const std::string videoName = argv[4];
+	const std::string videoCategory = argv[4];
+	const std::string vid = argv[5];
 
 	// Reads result.txt, sortedTrajectories.out
 	// track id -> cid
 	std::cout << "reading cluster assignments" << std::endl;
 	std::unordered_map<int, int> clusterId = readClusterId(clusterResultPath);
 
+	const std::string videoName = videoCategory + vid;
 	trackList tList;
-	restoreTrackList(primitiveGraphPath + "sortedTrajectories.out", tList);	
+	restoreTrackList(primitiveGraphPath + videoName + "_sortedTrajectories.out", tList);	
 	std::cout << "tracks are restored" << std::endl;
 	// Merge trajectories in the same cluster, computes a representative "supertrack" for each cluster	
 	// cid becomes superTrackId
@@ -193,17 +194,27 @@ int main(int argc, char** argv) {
 	trackList superTracks =	computeSuperTracks(numClusters, clusterId, tList);								
 
 	// Returns a CxC matrix.
-	std::cout << "Computing edge weights" << std::endl;
-	Edges edgeWeights = computeEdgeWeights(primitiveGraphPath, clusterId, numClusters);
+	//std::cout << "Computing edge weights" << std::endl;
+	//Edges edgeWeights = computeEdgeWeights(primitiveGraphPath + videoName + "_dij.txt", clusterId, numClusters);
 
 	// Output to archive, print edge weights
-	std::cout << "Writing edge weights" << std::endl;
-	writeEdgesToFile(clusterResultPath + videoName + "_edges.txt", edgeWeights);
+	
+	/* ARCHIVE OUTPUTS*/
+	videoRep video(superTracks, ucfActionClassMap[videoCategory], std::stoi(vid), -1, -1);	// Set videoWidth and videoHeight to nil
+  	std::ofstream ofs(clusterResultPath + videoCategory + "_" + vid + ".out");
+	{
+	    boost::archive::binary_oarchive oa(ofs);
+	    oa << video;   	 							// archive and stream closed when destructors are called
+	}
 
-	std::cout << "Writing super tracks" << std::endl;
-	writeSuperTracksToFile(clusterResultPath + videoName + "_superTracks.txt", superTracks);
+	/* RAW DATA OUTPUTS*/
+	//std::cout << "Writing edge weights" << std::endl;
+	//writeEdgesToFile(clusterResultPath + videoName + "_edges.txt", edgeWeights);
 
-	std::cout << "Writing fucked up coords" << std::endl;
-	writeCoordsToFile(clusterResultPath, superTracks);
+	//std::cout << "Writing super tracks in txt form" << std::endl;
+	//writeSuperTracksToFile(clusterResultPath + videoName + "_superTracks.txt", superTracks);
+
+	//std::cout << "Writing coords" << std::endl;
+	//writeCoordsToFile(clusterResultPath, superTracks);
 	return 0;
 }

@@ -86,18 +86,25 @@ int main(int argc, char** argv) {
 	//std::cout << "Reading bounding boxes" << std::endl;
  	//std::vector<Box> boxes = readBoundingBoxes(videoPath + std::to_string(vid) + ".txt");
 
+    std::cout << "[DrawClusters] Writing videos" << std::endl;
+	
+
     // Draw circles on the frames
 	std::cout << "[DrawClusters] Drawing circles" << std::endl;
 	std::cout << frames.size() << "Frames in total" << std::endl;
 	parseAndDraw(trjInStrings, frames, clusterColors);
 
-	std::cout << "[DrawClusters] Writing videos" << std::endl;
+	std::string outputVideoName = path + "rawTracks_" + videoClass + "_" + std::to_string(vid);
+	
 	// Open video to write
 	createVideoFromImages(
-		path + "rawTracks_" + videoClass + "_" + std::to_string(vid) + ".avi", 
+		outputVideoName + ".avi", 
 		capture.get(CV_CAP_PROP_FOURCC), 
 		10,
 		Size(capture.get(CV_CAP_PROP_FRAME_WIDTH), capture.get(CV_CAP_PROP_FRAME_HEIGHT)), frames);
+
+	std::string convertToMp4Command = "avconv -i " + outputVideoName + ".avi"+ " -c:v libx264 -c:a  copy "+ outputVideoName + ".mp4";
+	std::system(convertToMp4Command.c_str());
 
 	#ifdef VISUALIZE
 	for(const auto& f : frames) {
