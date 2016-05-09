@@ -14,7 +14,7 @@ void parseAndDraw(
 			coords.emplace_back(*vals_it, *(vals_it + 1));
 		}
 
-		for(int i = 0; i < coords.size(); i++) {
+		for(size_t i = 0; i < coords.size(); i++) {
 			// Draw circle
 			int frame = endingFrame + i + 1 - coords.size();
 			circle(frames[frame], coords[i], 2, getRandomColor(), -1, 10, 0);
@@ -49,47 +49,19 @@ int main(int argc, char** argv) {
 
     std::string videoClass = argv[3];
 
-	int vid;
-	std::istringstream getVid(argv[4]);
-    getVid >> vid;
+	int vid = std::stoi(argv[4]);
 
 	// Open Video to read
-	VideoCapture capture;
-	std::string video = inpath + std::to_string(vid) + ".vob";
-	capture.open(video.c_str());
+	VideoCapture capture = openVideo(inpath + std::to_string(vid) + ".vob");
 
-	if(!capture.isOpened()) {
-		fprintf(stderr, "Could not initialize capturing..\n");
-		return -1;
-	}
-
-	std::vector<Mat> frames;
-
-	Mat frame, grey;
-
-	while(true) {		
-		Mat image;
-		capture >> frame;
-
-		if (frame.empty()) {
-			break;
-		}
-
-		image.create(frame.size(), CV_8UC3);
-		grey.create(frame.size(), CV_8UC1);
-		frame.copyTo(image);
-		cvtColor(image, grey, CV_BGR2GRAY);
-		
-		// error handling
-		frames.push_back(image);
-	}
+	std::vector<Mat> frames = getFramesFromVideo(capture);
 
 	//std::cout << "Reading bounding boxes" << std::endl;
  	//std::vector<Box> boxes = readBoundingBoxes(inpath + std::to_string(vid) + ".txt");
 
     // Draw circles on the frames
 	std::cout << "[DrawClusters] Drawing circles" << std::endl;
-	std::cout << frames.size() << "Frames in total" << std::endl;
+	
 	parseAndDraw(trjInStrings, frames);
 
 	std::cout << "[DrawClusters] Writing videos" << std::endl;

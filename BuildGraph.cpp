@@ -68,9 +68,7 @@ std::map<std::pair<int, int>, double> generateGraph(const std::vector<track>& tr
 }
 
 void printDistanceMatrix(const std::string& filename, const std::map<std::pair<int, int>, double>& D, const int N) {
-  std::ofstream fout;
-  std::cout << "[BuildGraph] Opening output file : " << filename << std::endl;
-  fout.open(filename, std::ofstream::out);
+  
   // [[trj 0's neighbors], [trj 1's neighbors], ..., [trj N-1's]]
   std::vector<std::vector<std::pair<int, double>>> neighbors(N);
 
@@ -88,11 +86,15 @@ void printDistanceMatrix(const std::string& filename, const std::map<std::pair<i
   }
   // Output pspec id :track id
   // sort and print each list in neighbors
+  std::ofstream fout;
+  std::cout << "[BuildGraph] Opening output file : " << filename << std::endl;
+  fout.open(filename, std::ofstream::out);
+
   for(auto& v : neighbors) {
       // sort v's neighbors by their trajectory index
       std::sort(v.begin(), v.end(),
       [](const std::pair<int, double>& n1, const std::pair<int, double>& n2) {
-        return n1.first < n2.first;});
+        return n1.first < n2.first;}); 
 
       // file I/O
       for (size_t i = 0; i < v.size(); i++) {

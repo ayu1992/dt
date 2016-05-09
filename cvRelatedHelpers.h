@@ -66,3 +66,37 @@ void createVideoFromImages(const std::string& videoOut, const int fourcc, const 
 
   writer.release();
 }
+
+VideoCapture openVideo(const std::string& videoPath) {
+  VideoCapture capture;
+  capture.open(videoPath.c_str());
+
+  if(!capture.isOpened()) {
+    fprintf(stderr, "Could not initialize capturing..\n");
+  }
+ 
+  return capture;
+}
+
+std::vector<Mat> getFramesFromVideo(VideoCapture& capture) {
+  std::vector<Mat> frames;
+  Mat temporary, grey;
+
+  while(true) {   
+    Mat image;
+    capture >> temporary;
+
+    if (temporary.empty()) {
+      break;
+    }
+
+    image.create(temporary.size(), CV_8UC3);
+    grey.create(temporary.size(), CV_8UC1);
+    temporary.copyTo(image);
+    cvtColor(image, grey, CV_BGR2GRAY);
+    
+    // error handling
+    frames.push_back(image);
+  }
+  return frames;
+}

@@ -2,6 +2,7 @@
 #include <map>
 #include <unordered_map>
 #include <fstream>
+#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -82,6 +83,17 @@ void readClusterId(const std::string& filename, std::unordered_map<int, int>& cl
   
   fin.close();
   return;
+}
+
+int countNonEmptyClusters(const std::string path) {
+  std::ifstream fin((path + "result.txt").c_str());
+  std::set<int> dedup;
+  std::string line;
+  while(std::getline(fin, line)) {
+    int cid = std::stoi(line); 
+    dedup.insert(cid);
+  }
+  return dedup.size();
 }
 
 // clusterId : trajId -> cid
