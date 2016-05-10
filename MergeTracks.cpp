@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstdio>
 #include <functional>
 #include <string>
 #include <sstream>
@@ -127,16 +128,13 @@ Edges computeEdgeWeights(
 
 // edges is C x C
 void writeEdgesToFile(const std::string& path, const Edges& edges) {
-	std::ofstream fout;
-	fout.open (path, std::fstream::in | std::fstream::out | std::fstream::app);
+	FILE* fout = fopen(path.c_str(), "w");
 	for (const auto& v : edges) {
 		for (const auto& vv : v) {
-			fout << vv << " ";
+			fprintf(fout, "%f ", vv);
 		}
-		fout << std::endl;
+		fprintf(fout, "\n");
 	}
-
-	fout.close();
 }
 
 template <typename Functor>
@@ -194,12 +192,13 @@ int main(int argc, char** argv) {
 	trackList superTracks =	computeSuperTracks(numClusters, clusterId, tList);								
 
 	// Returns a CxC matrix.
-	//std::cout << "Computing edge weights" << std::endl;
-	//Edges edgeWeights = computeEdgeWeights(primitiveGraphPath + videoName + "_dij.txt", clusterId, numClusters);
+	std::cout << "Computing edge weights" << std::endl;
+	Edges edgeWeights = computeEdgeWeights(primitiveGraphPath + videoName + "_dij.txt", clusterId, numClusters);
 
 	// Output to archive, print edge weights
 	
 	/* ARCHIVE OUTPUTS*/
+	std::cout << "Output super tracks to archive" << std::endl;
 	videoRep video(superTracks, ucfActionClassMap[videoCategory], std::stoi(vid), -1, -1);	// Set videoWidth and videoHeight to nil
   	std::ofstream ofs(clusterResultPath + videoCategory + "_" + vid + ".out");
 	{
@@ -208,11 +207,11 @@ int main(int argc, char** argv) {
 	}
 
 	/* RAW DATA OUTPUTS*/
-	//std::cout << "Writing edge weights" << std::endl;
-	//writeEdgesToFile(clusterResultPath + videoName + "_edges.txt", edgeWeights);
+	std::cout << "Writing edge weights" << std::endl;
+	writeEdgesToFile(clusterResultPath + videoName + "_edges.txt", edgeWeights);
 
-	//std::cout << "Writing super tracks in txt form" << std::endl;
-	//writeSuperTracksToFile(clusterResultPath + videoName + "_superTracks.txt", superTracks);
+	std::cout << "Writing super tracks in txt form" << std::endl;
+	writeSuperTracksToFile(clusterResultPath + videoName + "_superTracks.txt", superTracks);
 
 	//std::cout << "Writing coords" << std::endl;
 	//writeCoordsToFile(clusterResultPath, superTracks);

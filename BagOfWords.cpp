@@ -10,9 +10,9 @@ extern "C" {
 }
 #include <vl/kmeans.h>
 
-constexpr int kNumRandomSamples = 100000;
-constexpr int reservoirCacheSize = 300000;
-constexpr int numCenters = 4000;
+constexpr int kNumRandomSamples = 10000;	//100000
+constexpr int reservoirCacheSize = 500;	//300000
+constexpr int numCenters = 500;			// 4000
 constexpr int numCodebookIter = 8;
 
 using ClassToFileNames = std::map<std::string, std::vector<std::string>>;
@@ -134,7 +134,7 @@ std::unique_ptr<VlKMeans> makeCodebook(float* data, const int numData) {
 
 template <typename Functor>
 std::unique_ptr<VlKMeans> getCodebook(const std::vector<track>& trainingSet) {
-	checkContainNaN(trainingSet);
+	// checkContainNaN(trainingSet);
 	std::unique_ptr<float []> data = getData<Functor>(trainingSet);
 	return makeCodebook<Functor>(data.get(), kNumRandomSamples);	
 }
@@ -227,15 +227,19 @@ void generateFeatures(const std::vector<std::string>& filenames, const std::stri
 		std::cout << instance.second.size() << " tracks" << std::endl;
 		//std::cout << "Displacements" << std::endl;
 		//std::vector<float> feature = transformData<DisplacementsGetter>(codebooks[0].get(), instance.second);
-		std::cout << "Hog" << std::endl;
+		//std::cout << "Hog" << std::endl;
 		//vectorInsert(transformData<HogGetter>(codebooks[1].get(), instance.second), feature);
-		std::vector<float> feature = transformData<HogGetter>(codebooks[0].get(), instance.second);
+		//std::vector<float> feature = transformData<HogGetter>(codebooks[0].get(), instance.second);
 		//std::cout << "Hof" << std::endl;
 		//vectorInsert(transformData<HofGetter>(codebooks[2].get(), instance.second), feature);
 		//std::cout << "MbhX" << std::endl;
 		//vectorInsert(transformData<MbhXGetter>(codebooks[3].get(), instance.second), feature);
 		//std::cout << "MbhY" << std::endl;
 		//vectorInsert(transformData<MbhYGetter>(codebooks[4].get(), instance.second), feature);
+		std::vector<float> feature = transformData<HogGetter>(codebooks[0].get(), instance.second);
+		//vectorInsert(transformData<HofGetter>(codebooks[1].get(), instance.second), feature);
+		vectorInsert(transformData<MbhXGetter>(codebooks[1].get(), instance.second), feature);
+		vectorInsert(transformData<MbhYGetter>(codebooks[2].get(), instance.second), feature);
 		// Write a line to output
 		outputFile.emplace(instance.first, feature);
 	}
@@ -258,9 +262,7 @@ int main(int argc, char** argv) {
 
 	// Randomly sample some trajectories 
 	std::vector<track> samples(kNumRandomSamples);
-
 	getTrainingSamples(samples, trainingSetNames, trainingSetPath);
-
 	// Compute codebook from samples
 	std::vector<std::unique_ptr<VlKMeans>> codebooks;
 	// Split the samples
@@ -270,11 +272,11 @@ int main(int argc, char** argv) {
 	//codebooks.push_back(getCodebook<DisplacementsGetter>(samples));
 	codebooks.push_back(getCodebook<HogGetter>(samples));
 	//codebooks.push_back(getCodebook<HofGetter>(samples));
-	//codebooks.push_back(getCodebook<MbhXGetter>(samples));
-	//codebooks.push_back(getCodebook<MbhYGetter>(samples));
+	codebooks.push_back(getCodebook<MbhXGetter>(samples));
+	codebooks.push_back(getCodebook<MbhYGetter>(samples));
 
 	std::cout << "Generating training set" << std::endl;
-	generateFeatures(trainingSetNames, trainingSetPath, codebooks, "NoClustering/Features/HoG/TrainingSet.out");
+	generateFeatures(trainingSetNames, trainingSetPath, codebooks, "SuperTracks/HoGMBH/s=" + std::to_string(kNumRandomSamples)+ "/nc=" + std::to_string(numCenters) + ".out");
 
 	
 	/* Similar operation for test set*/

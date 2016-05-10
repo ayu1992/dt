@@ -17,7 +17,7 @@ struct point {
   float x;
   float y;
   
-  point() {};
+  point() {x = 0.0; y = 0.0;};
   point(const float x, const float y): x(x), y(y) {};
 
   // multiplication that mutates self

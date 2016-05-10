@@ -31,6 +31,9 @@ DominantClusterFilter: DominantClusterFilter.cpp
 LocalizationScoreForVideo: LocalizationScoreForVideo.cpp
 	g++ LocalizationScoreForVideo.cpp -o LocalizationScoreForVideo -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -std=c++11	
 
+countActualClusters: countActualClusters.cpp
+	g++ countActualClusters.cpp -o countActualClusters -std=c++11
+
 # set the build configuration set 
 BUILD := release
 #BUILD := debug

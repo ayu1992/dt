@@ -1,64 +1,75 @@
 #include "BoostRelatedHelpers.h"
+#include <boost/functional/hash.hpp>
+#include <cstdio>
 /* Read *.features, output sortedTrajectories */
 // Dimension information to parse input file
 const double TAU_S = 16.0;
 const int TAU_T = 8;
 
+using Graph = std::unordered_map<std::pair<int, int>, double, boost::hash<std::pair<int, int>>>; 
+
+inline float spatialDistance(const point& p1, const point& p2) {
+  point diff = p1 - p2;
+  return sqrt(diff.x * diff.x + diff.y * diff.y);
+}
+  
+inline std::vector<point> normalizeCoordsByFrame(const std::vector<point>& coords, const int videoWidth, const int videoHeight) {
+  std::vector<point> temporary(coords.size(), point(0.0, 0.0));  // 16
+  std::transform(coords.begin(), coords.end(), temporary.begin(), 
+    [videoWidth, videoHeight](const point& p){
+      return point(static_cast<int>(round(static_cast<float>(p.x) / videoWidth)), static_cast<int>(round(static_cast<float>(p.y) / videoHeight)));
+    }
+  );
+    
+  return temporary;  
+}
+
+inline float square(float f) { return f * f; }
+
 // Generate Graph : d -> E -> S
 // tracks were sorted in order by ending frames
-std::map<std::pair<int, int>, double> generateGraph(const std::vector<track>& tracks, const float r, const int videoWidth, const int videoHeight) {
-  std::map<std::pair<int, int>, double> D;
-
-  auto spatialDistance = [](const point& p1, const point& p2)-> float {
-    point diff = p1 - p2;
-    return sqrt(diff.x * diff.x + diff.y * diff.y);
-  };
-
-  auto normalizeByDimension = [videoWidth, videoHeight](const point& p)-> point {
-    return point(static_cast<int>(round(static_cast<float>(p.x) / videoWidth)), static_cast<int>(round(static_cast<float>(p.y) / videoHeight)));
-  };
+Graph generateGraph(const std::vector<track>& tracks, const std::vector<std::vector<point>>& coords, const float r) {
+  
+  Graph D;
 
   for(size_t traj_i = 0; traj_i < tracks.size(); traj_i++) {
-    for(size_t traj_j = traj_i + 1; traj_j < tracks.size(); traj_j++) {
+
+    // find the range of traj_j within overlap
+    const int endingFrame_i = tracks[traj_i].endingFrame;
+
+    auto end_it = std::upper_bound(
+      tracks.begin() + traj_i + 1, 
+      tracks.end(),
+      endingFrame_i,
+      [](int endingFrame, const track& t) {
+      return t.endingFrame > endingFrame + TRACK_LEN - TAU_T; }
+    );
+
+    for(size_t traj_j = traj_i + 1; traj_j < end_it - tracks.begin(); traj_j++) {
       
       // Ending frame indices for traj_i and traj_j
       const int endf_i = tracks[traj_i].endingFrame;
       const int endf_j = tracks[traj_j].endingFrame;
-      const int offset = endf_j - endf_i;   // offset is 'o' in the paper
-
-      double dij = 0.0;
-      // Break early if doesn't overlap for 1 or more frames
-      if(offset > TRACK_LEN) { 
+      const int offset = endf_j - endf_i;   // offset is 'o' in the paper   
+      const int overlap = TRACK_LEN - offset;
+      
+      // Break early if not enough overlap
+      if(overlap < TAU_T) { 
         break;
       }
-    
-      // Filter by TAU_T, overlap must be greater than threshold
-      const int overlap = TRACK_LEN - offset;
-      if (overlap <= TAU_T) {
-        continue;
-      }
 
-      std::vector<point> xi;
-      for (const auto& p : tracks[traj_i].coords) {
-        xi.push_back(normalizeByDimension(p));
-      }
-
-      std::vector<point> xj;
-      for (const auto& p : tracks[traj_j].coords) {
-        xj.push_back(normalizeByDimension(p));
-      }
-      
       // Compute d_ij
-      double d = 0.0;
+      double ds = 0.0;
+      double dij = 0.0;
       for(int index_i = offset; index_i < TRACK_LEN; ++index_i) {
         //d += spatialDistance(tracks[traj_i].displacements[index_i], tracks[traj_j].displacements[index_i - offset]);
-        d += spatialDistance(xi[index_i], xj[index_i - offset]);
+        ds += spatialDistance(coords[traj_i][index_i], coords[traj_j][index_i - offset]);
       }
-
+     // std::cout << "hi" << std::endl;
       // Compute s_ij
-      if((d / overlap) < TAU_S) {     // equation 3 in paper
+      if((ds / overlap) < TAU_S) {     // equation 3 in paper
         //std::cout << "d : "<< d <<"; or: " << offset * r << "; or^2: "<< pow(offset * r, 2) << std::endl;
-        dij = (d + pow(offset * r, 2));
+        dij = (ds + square(offset * r));
         //dij = d + offset * r;
         D.emplace(std::make_pair(traj_i, traj_j), dij);
       }
@@ -67,7 +78,7 @@ std::map<std::pair<int, int>, double> generateGraph(const std::vector<track>& tr
   return D;
 }
 
-void printDistanceMatrix(const std::string& filename, const std::map<std::pair<int, int>, double>& D, const int N) {
+void printDistanceMatrix(const std::string& filename, const Graph& D, const int N) {
   
   // [[trj 0's neighbors], [trj 1's neighbors], ..., [trj N-1's]]
   std::vector<std::vector<std::pair<int, double>>> neighbors(N);
@@ -84,11 +95,12 @@ void printDistanceMatrix(const std::string& filename, const std::map<std::pair<i
   for (int i = 0; i < N; i++) {
     neighbors[i].emplace_back(i, 0.00000000001);
   }
+
   // Output pspec id :track id
   // sort and print each list in neighbors
-  std::ofstream fout;
+  
   std::cout << "[BuildGraph] Opening output file : " << filename << std::endl;
-  fout.open(filename, std::ofstream::out);
+  FILE* fout = fopen(filename.c_str(), "w");
 
   for(auto& v : neighbors) {
       // sort v's neighbors by their trajectory index
@@ -98,13 +110,30 @@ void printDistanceMatrix(const std::string& filename, const std::map<std::pair<i
 
       // file I/O
       for (size_t i = 0; i < v.size(); i++) {
-        if( i != 0) fout << " ";  
-        fout << v[i].first << ":" << v[i].second;
+        if( i == 0) fprintf(fout, "%d:%f", v[i].first, v[i].second);
+        else  fprintf(fout, " %d:%f", v[i].first, v[i].second);
       }
-      fout << std::endl;
+      fprintf(fout, "\n");
   }
-  fout.close();
   return;
+}
+
+void outputSortedTrajectories(const std::string& outputPath, const std::vector<track>& tracks) {
+
+  trackList tList;
+  int index = 0;
+  // from vector<track> --> vector<std::pair<int, track>>
+  for (const auto & t : tracks) {
+    tList.addTrack(index, t);
+    index++;
+  }
+  
+  std::ofstream ofs(outputPath + "_sortedTrajectories.out");
+  // save data to archive
+  {
+      boost::archive::binary_oarchive oa(ofs);
+      oa << tList;    // archive and stream closed when destructors are called
+  }
 }
 
 int main(int argc, char** argv) {
@@ -113,9 +142,7 @@ int main(int argc, char** argv) {
   std::string outputPath = argv[2];   // Location to write sortedTrajectories
   std::string videoName = argv[3];
 
-  float r;
-  std::istringstream getGamma(argv[4]);
-  getGamma >> r;
+  float r = std::stof(argv[4]);
 
   // Read and pack feature dump into Tracks(temporary container)
   std::vector<track> tracks; 
@@ -131,27 +158,24 @@ int main(int argc, char** argv) {
     [](const track &a, const track &b) {
       return a.endingFrame < b.endingFrame;});
 
-  // (traj index i, traj index j) -> s_ij
-  std::map<std::pair<int, int>, double> D = generateGraph(tracks, r, videoWidth, videoHeight);
+  outputSortedTrajectories(outputPath+videoName, tracks);
 
+  // Normalize the coordinates (only used in this file)
+  std::cout << "[BuildGraph] Normalizing coordinates by frame size"<< std::endl;  
+
+  std::vector<std::vector<point>> normalizedCoords;  // in identical order as tracks
+
+  for (const auto& t : tracks) {
+    normalizedCoords.push_back(normalizeCoordsByFrame(t.coords, videoWidth, videoHeight));
+  }
+
+  // (traj index i, traj index j) -> s_ij
+  std::cout << "Generating graph, N2" << std::endl;
+  Graph D = generateGraph(tracks, normalizedCoords, r);
   // [[trj 0's neighbors], [trj 1's neighbors], ..., [trj N-1's]]
   
   // Output s_ij for spectral clustering
   printDistanceMatrix(outputPath + videoName + "_dij.txt", D, tracks.size());
-  
-  trackList tList;
-  int index = 0;
-  // from vector<track> --> vector<std::pair<int, track>>
-  for (const auto & t : tracks) {
-    tList.addTrack(index, t);
-    index++;
-  }
-  
-  std::ofstream ofs(outputPath + videoName + "_sortedTrajectories.out");
-  // save data to archive
-  {
-      boost::archive::binary_oarchive oa(ofs);
-      oa << tList;    // archive and stream closed when destructors are called
-  }
+
   return 0;  
 }

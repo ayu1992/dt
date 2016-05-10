@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include <boost/algorithm/string.hpp>
 
-const int NUM_CHANNELS = 1;
+const int NUM_CHANNELS = 5;
 using Data = std::vector<std::vector<float>>;		// N x 4000
 
 // Read TrainingSet.out (N x 20000), TestSet.out (M x 20000)
@@ -28,13 +28,13 @@ std::vector<float> parseLine(std::vector<std::string>::iterator& strs_it) {
 
 // this needs to support custom number of channels, same problem as BagOfWords.cpp?
 void parseDataSet(
-	const std::string& filename, Data& hog, std::vector<int>& labels) {
-//	Data& displacements, // N x 4000
-	 
-//	Data& hof,
-//	Data& mbhx, 
-//	Data& mbhy, 
-	
+	const std::string& filename,  
+	Data& displacements, // N x 4000
+	Data& hog,
+	Data& hof,
+	Data& mbhx, 
+	Data& mbhy, 
+	std::vector<int>& labels) {
 
 	std::vector<std::string> lines;
 	readFileIntoStrings(filename, lines);
@@ -49,11 +49,11 @@ void parseDataSet(
 		labels.push_back(label);
 		++strs_it;
 
-//		displacements.push_back(parseLine(strs_it));
+		displacements.push_back(parseLine(strs_it));
 		hog.push_back(parseLine(strs_it));
-//		hof.push_back(parseLine(strs_it));
-//		mbhx.push_back(parseLine(strs_it));
-//		mbhy.push_back(parseLine(strs_it));		
+		hof.push_back(parseLine(strs_it));
+		mbhx.push_back(parseLine(strs_it));
+		mbhy.push_back(parseLine(strs_it));		
 	}
 }
 
@@ -133,11 +133,11 @@ Data computeNormalizedChiSquareDistanceForTesting(
 Data buildKernelFromTrainingSet(
 	const std::string& filename, 
 	const float gamma,
-//	Data& displacements, 
+	Data& displacements, 
 	Data& hog, 
-//	Data& hof, 
-//	Data& mbhx, 
-//	Data& mbhy, 
+	Data& hof, 
+	Data& mbhx, 
+	Data& mbhy, 
 	std::vector<int>& labels, 
 	std::vector<float>& Ac) {
 
@@ -156,11 +156,11 @@ Data buildKernelFromTrainingSet(
 		}
 	};
 
-//	add_channel_to_chi_squares(displacements, 0);
+	add_channel_to_chi_squares(displacements, 0);
 	add_channel_to_chi_squares(hog, 0);
-//	add_channel_to_chi_squares(hof, 2);
-//	add_channel_to_chi_squares(mbhx, 3);
-//	add_channel_to_chi_squares(mbhy, 4);
+	add_channel_to_chi_squares(hof, 2);
+	add_channel_to_chi_squares(mbhx, 3);
+	add_channel_to_chi_squares(mbhy, 4);
 
 	for (int i = 0; i < N; ++i) {
 		for (int j = 0; j < N; ++j) K[i][j] = std::exp(-gamma * K[i][j]);

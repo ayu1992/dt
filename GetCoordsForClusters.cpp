@@ -9,7 +9,7 @@ int main(int argc, char** argv) {
 	std::unordered_map<int, int> clusterId = readClusterId(clusterResultPath);
 
 	trackList tList;
-	restoreTrackList(graphPath + "sortedTrajectories.out", tList);		
+	restoreTrackList(graphPath + "_sortedTrajectories.out", tList);		
 
 	std::ofstream ots(clusterResultPath + "granularUnnormalizedCoords.out");
 	{
