@@ -1,10 +1,16 @@
 #include "BoostRelatedHelpers.h"
+#include <ctime>
+#include <dirent.h>
+#include <limits>
+#include <random>
+
 #include <boost/functional/hash.hpp>
 #include <cstdio>
 /* Read *.features, output sortedTrajectories */
 // Dimension information to parse input file
 const float TAU_S = 16.0;
 const int TAU_T = 8;
+const int MAX_NUM_TRACKS = 8000;
 
 using Graph = std::unordered_map<std::pair<int, int>, float, boost::hash<std::pair<int, int>>>; 
 
@@ -145,11 +151,23 @@ int main(int argc, char** argv) {
   float r = std::stof(argv[4]);
 
   // Read and pack feature dump into Tracks(temporary container)
-  std::vector<track> tracks; 
+  std::vector<track> temporary; 
   std::vector<std::string> trajInStrings;
   int videoWidth, videoHeight;
-  parseFeaturesToTracks(videoPath, trajInStrings, tracks, videoWidth, videoHeight); 
-  std::cout << "[BuildGraph] "<< tracks.size() << " trajectories in total" << std::endl;
+  parseFeaturesToTracks(videoPath, trajInStrings, temporary, videoWidth, videoHeight); 
+  std::cout << "[BuildGraph] "<< temporary.size() << " trajectories in total" << std::endl;
+
+  std::vector<track> tracks;
+
+  if (temporary.size() > MAX_NUM_TRACKS) {
+    // Random sample some tracks 
+    std::random_shuffle(temporary.begin(), temporary.end());
+    std::vector<track> samples(temporary.begin(), temporary.begin() + MAX_NUM_TRACKS);
+    tracks = samples;
+  } else {
+    tracks = temporary;
+  }
+    std::cout << tracks.size() << "tracks" << std::endl;
 
   // Sort Tracks by ending frame for ease of graph construction
   std::sort(
