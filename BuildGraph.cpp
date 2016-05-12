@@ -3,10 +3,10 @@
 #include <cstdio>
 /* Read *.features, output sortedTrajectories */
 // Dimension information to parse input file
-const double TAU_S = 16.0;
+const float TAU_S = 16.0;
 const int TAU_T = 8;
 
-using Graph = std::unordered_map<std::pair<int, int>, double, boost::hash<std::pair<int, int>>>; 
+using Graph = std::unordered_map<std::pair<int, int>, float, boost::hash<std::pair<int, int>>>; 
 
 inline float spatialDistance(const point& p1, const point& p2) {
   point diff = p1 - p2;
@@ -59,8 +59,8 @@ Graph generateGraph(const std::vector<track>& tracks, const std::vector<std::vec
       }
 
       // Compute d_ij
-      double ds = 0.0;
-      double dij = 0.0;
+      float ds = 0.0;
+      float dij = 0.0;
       for(int index_i = offset; index_i < TRACK_LEN; ++index_i) {
         //d += spatialDistance(tracks[traj_i].displacements[index_i], tracks[traj_j].displacements[index_i - offset]);
         ds += spatialDistance(coords[traj_i][index_i], coords[traj_j][index_i - offset]);
@@ -81,13 +81,13 @@ Graph generateGraph(const std::vector<track>& tracks, const std::vector<std::vec
 void printDistanceMatrix(const std::string& filename, const Graph& D, const int N) {
   
   // [[trj 0's neighbors], [trj 1's neighbors], ..., [trj N-1's]]
-  std::vector<std::vector<std::pair<int, double>>> neighbors(N);
+  std::vector<std::vector<std::pair<int, float>>> neighbors(N);
 
   // iterate every pair in D
   for (const auto& pair : D) {
       int trj_i = pair.first.first;
       int trj_j = pair.first.second;
-      double dij = pair.second;
+      float dij = pair.second;
       neighbors[trj_i].emplace_back(trj_j, dij);
       neighbors[trj_j].emplace_back(trj_i, dij);
   } // end of iterating D
@@ -105,7 +105,7 @@ void printDistanceMatrix(const std::string& filename, const Graph& D, const int 
   for(auto& v : neighbors) {
       // sort v's neighbors by their trajectory index
       std::sort(v.begin(), v.end(),
-      [](const std::pair<int, double>& n1, const std::pair<int, double>& n2) {
+      [](const std::pair<int, float>& n1, const std::pair<int, float>& n2) {
         return n1.first < n2.first;}); 
 
       // file I/O
