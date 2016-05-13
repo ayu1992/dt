@@ -1,12 +1,14 @@
 DATASET="UCFSports/"
 declare -A CATEGORIES
-CATEGORIES=(['Riding-Horse']=12)
-#CATEGORIES=(['Run-Side']=13)	# 13
-# done CATEGORIES=(['Golf-Swing-Back']=5 ['Golf-Swing-Front']=8 ['SkateBoarding-Front']=12 ['Swing-Bench']=20)
-#CATEGORIES=(['Diving-Side']=14 ['Kicking-Front']=10 ['Kicking-Side']=10 ['Riding-Horse']=12)
-#CATEGORIES=(['Lifting']=6 ['Golf-Swing-Side']=5 ['Swing-SideAngle']=13 ['Walk-Front']=22)
+#['Riding-Horse']=12 ['Walk-Front']=22 ['Run-Side']=13
+#CATEGORIES=(['Run-Side']=13)
+#CATEGORIES=(['Golf-Swing-Back']=5 ['Golf-Swing-Front']=8 ['SkateBoarding-Front']=12 ['Swing-Bench']=20)
+#CATEGORIES=(['Diving-Side']=14 ['Kicking-Front']=10 ['Kicking-Side']=10)
+#CATEGORIES=(['Lifting']=6 ['Golf-Swing-Side']=5 ['Swing-SideAngle']=13 )
+CATEGORIES=(['Lifting']=6 ['Golf-Swing-Side']=5 ['Swing-SideAngle']=13 ['Diving-Side']=14 ['Kicking-Front']=10 ['Kicking-Side']=10 ['Golf-Swing-Back']=5 ['Golf-Swing-Front']=8 ['SkateBoarding-Front']=12 ['Swing-Bench']=20 ['Riding-Horse']=12 ['Walk-Front']=22 ['Run-Side']=13)
 RESOLUTION=$DATASET"original/"
 EXTRACTION="idt/"
+PROCESS=1
 
 #rm BuildGraph
 #rm MergeTracks
@@ -29,10 +31,10 @@ bar="[=======================================================================]"
 
 for CATEGORY in "${!CATEGORIES[@]}"			# '!' expands keys, no '!' expands values
 do
-	for ((vid=6; vid <= ${CATEGORIES[$CATEGORY]}; vid++))
+	for ((vid=1; vid <= ${CATEGORIES[$CATEGORY]}; vid++))
 	do 
 		((progress++))
-		for PARAM_R in 0.5
+		for PARAM_R in 0.05 #0.1
 		do 
 			SECONDS=0
 			#START_TIME=$(date +%s)
@@ -48,7 +50,7 @@ do
 			for NUM_CLUSTERS in 500
 			do	
 				# Output location
-				OUT_PATH=$GRAPH_PATH"c="$NUM_CLUSTERS"/p5/"					
+				OUT_PATH=$GRAPH_PATH"c="$NUM_CLUSTERS"/p"$PROCESS"/"					
 				mkdir -p $OUT_PATH								# No op if the folder already exists
 
 				rm $OUT_PATH"result.txt"
@@ -56,7 +58,7 @@ do
 
 				./BuildGraph $VIDEO_NAME $GRAPH_PATH $CATEGORY$vid $PARAM_R
 				echo "converting distance to similarity"
-				mpiexec -n 4 ../pspectralclustering/distance_to_similarity --input $GRAPH_PATH$CATEGORY$vid"_dij.txt" --output $OUT_PATH"similarity.txt"
+				mpiexec -n 8 ../pspectralclustering/distance_to_similarity --input $GRAPH_PATH$CATEGORY$vid"_dij.txt" --output $OUT_PATH"similarity.txt"
 
 
 				# wipe out intermediate data, leave a clean state for this run
