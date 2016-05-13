@@ -1,5 +1,5 @@
 #include "BoostRelatedHelpers.h"
-#include <ctime> 
+#include <ctime>
 #include <dirent.h>
 #include <limits>
 #include <random>
@@ -10,9 +10,6 @@ extern "C" {
 }
 #include <vl/kmeans.h>
 
-constexpr int kNumRandomSamples = 10000;	//100000
-constexpr int reservoirCacheSize = 500;	//300000
-constexpr int numCenters = 500;			// 4000
 constexpr int numCodebookIter = 8;
 
 using ClassToFileNames = std::map<std::string, std::vector<std::string>>;
@@ -34,7 +31,12 @@ std::vector<std::string> getArchiveNames(const std::string archivesLocation) {
 }
 
 template <typename T>
-void reservoirSample(std::vector<T>& samples, int num_samples, int j, const T& t) {
+void reservoirSample(
+	std::vector<T>& samples,
+	 int num_samples, 
+	 int j, 
+	 const T& t) {
+
 	if (j < num_samples - 1) {
 		samples[j] = t;
 		return;
@@ -47,14 +49,17 @@ void reservoirSample(std::vector<T>& samples, int num_samples, int j, const T& t
 	samples[i] = t;
 }
 
-void getTrainingSamples(std::vector<track>& samples, const std::vector<std::string>& archiveNames, const std::string archivesLocation) {
+void getTrainingSamples(
+	std::vector<track>& samples,
+	const std::vector<std::string>& archiveNames, 
+	const std::string archivesLocation, 
+	const int kNumRandomSamples) {
 	int j = 0;
 	for (const std::string& path : archiveNames) {
 		videoRep video;
 		restoreVideoRep(archivesLocation + path, video);
 		for (const auto& id_and_track : video.largestCluster().tracks()) {
 			reservoirSample(samples, kNumRandomSamples, j++, id_and_track.second);
-			if (j % reservoirCacheSize == 0) std::cout << "j: " << j << std::endl; 
 		}
 	}
 }
@@ -93,12 +98,12 @@ std::unique_ptr<float[]> getData (const std::vector<track>& tracks) {
 }
 
 template <typename Functor>
-std::unique_ptr<VlKMeans> makeCodebook(float* data, const int numData) {
+std::unique_ptr<VlKMeans> makeCodebook(float* data, const int numData, const int numCenters) {
 	std::cout << "Making codebook" << std::endl;
 	std::vector<std::unique_ptr<VlKMeans>> kmeansInstances;
 	std::vector<float *> kmeansCenters;	
   	std::vector<float> sumDistances;
-  	double energy;
+  	float energy;
   	// Initialize kmeans 8 times and select result with lowest error
 	for (int i = 0; i < numCodebookIter; ++i) {
 	  	// Build codebook
@@ -133,10 +138,10 @@ std::unique_ptr<VlKMeans> makeCodebook(float* data, const int numData) {
 }
 
 template <typename Functor>
-std::unique_ptr<VlKMeans> getCodebook(const std::vector<track>& trainingSet) {
+std::unique_ptr<VlKMeans> getCodebook(const std::vector<track>& trainingSet, const int numCenters, const int kNumRandomSamples) {
 	// checkContainNaN(trainingSet);
 	std::unique_ptr<float []> data = getData<Functor>(trainingSet);
-	return makeCodebook<Functor>(data.get(), kNumRandomSamples);	
+	return makeCodebook<Functor>(data.get(), kNumRandomSamples, numCenters);	
 }
 
 std::vector<LabelAndTracks> getVideoLabelToTracks(const std::vector<std::string>& filenames, const std::string& pathToFiles) {
@@ -161,7 +166,7 @@ inline float computeDistance(const std::vector<float>& data, const float* center
 }
 
 template <typename Functor>
-std::vector<int> quantize(VlKMeans* kmeans, const std::vector<track>& tracks) {
+std::vector<int> quantize(VlKMeans* kmeans, const std::vector<track>& tracks, const int numCenters) {
 	std::vector<int> assignments(tracks.size(), -1);
 	int ti = 0;
 	for (size_t ti = 0; ti < tracks.size(); ++ti) {
@@ -184,8 +189,8 @@ std::vector<int> quantize(VlKMeans* kmeans, const std::vector<track>& tracks) {
 }
 
 template <typename Functor>
-std::vector<float> transformData(VlKMeans* kmeans, const std::vector<track>& tracks) {
-	std::vector<int> assignments = quantize<Functor>(kmeans, tracks);
+std::vector<float> transformData(VlKMeans* kmeans, const std::vector<track>& tracks, const int numCenters) {
+	std::vector<int> assignments = quantize<Functor>(kmeans, tracks, numCenters);
 	std::vector<float> features(numCenters, 0);
 	for (int i = 0; i < assignments.size(); ++i) {
 		if (assignments[i] >= numCenters || assignments[i] < 0) {
@@ -217,29 +222,35 @@ void vectorInsert(const std::vector<T>& a, std::vector<T>& b) {
 	b.insert(b.end(), a.begin(), a.end());
 }
 
-void generateFeatures(const std::vector<std::string>& filenames, const std::string& archivesLocation, const std::vector<std::unique_ptr<VlKMeans>>& codebooks, const std::string& outputName) {
+void generateFeatures(
+	const std::vector<std::string>& filenames, 
+	const std::string& archivesLocation,
+	const std::vector<std::unique_ptr<VlKMeans>>& codebooks,
+	const std::string& outputName,
+	const int numCenters) {
 	// transform data to features
 	std::vector<LabelAndTracks> videos = getVideoLabelToTracks(filenames, archivesLocation);
 	std::multimap<int, std::vector<float>> outputFile;	// label -> feaure
 
 	for (const auto& instance : videos) {	// Each instance corresponds to a video
 		if (instance.second.empty())	continue;
-		std::cout << instance.second.size() << " tracks" << std::endl;
-		//std::cout << "Displacements" << std::endl;
-		//std::vector<float> feature = transformData<DisplacementsGetter>(codebooks[0].get(), instance.second);
-		//std::cout << "Hog" << std::endl;
-		//vectorInsert(transformData<HogGetter>(codebooks[1].get(), instance.second), feature);
-		//std::vector<float> feature = transformData<HogGetter>(codebooks[0].get(), instance.second);
-		//std::cout << "Hof" << std::endl;
-		//vectorInsert(transformData<HofGetter>(codebooks[2].get(), instance.second), feature);
-		//std::cout << "MbhX" << std::endl;
-		//vectorInsert(transformData<MbhXGetter>(codebooks[3].get(), instance.second), feature);
-		//std::cout << "MbhY" << std::endl;
-		//vectorInsert(transformData<MbhYGetter>(codebooks[4].get(), instance.second), feature);
-		std::vector<float> feature = transformData<HogGetter>(codebooks[0].get(), instance.second);
-		//vectorInsert(transformData<HofGetter>(codebooks[1].get(), instance.second), feature);
-		vectorInsert(transformData<MbhXGetter>(codebooks[1].get(), instance.second), feature);
-		vectorInsert(transformData<MbhYGetter>(codebooks[2].get(), instance.second), feature);
+		//std::cout << instance.second.size() << " tracks" << std::endl;
+		
+		std::cout << "Displacements" << std::endl;
+		std::vector<float> feature = transformData<DisplacementsGetter>(codebooks[0].get(), instance.second, numCenters);
+		std::cout << "Hog" << std::endl;
+		vectorInsert(transformData<HogGetter>(codebooks[1].get(), instance.second, numCenters), feature);
+		std::cout << "Hof" << std::endl;
+		vectorInsert(transformData<HofGetter>(codebooks[2].get(), instance.second, numCenters), feature);
+		std::cout << "MbhX" << std::endl;
+		vectorInsert(transformData<MbhXGetter>(codebooks[3].get(), instance.second, numCenters), feature);
+		std::cout << "MbhY" << std::endl;
+		vectorInsert(transformData<MbhYGetter>(codebooks[4].get(), instance.second, numCenters), feature);
+		
+		//std::vector<float> feature = transformData<MbhXGetter>(codebooks[0].get(), instance.second, numCenters);
+		//vectorInsert(transformData<MbhYGetter>(codebooks[1].get(), instance.second, numCenters), feature);
+		//vectorInsert(transformData<MbhXGetter>(codebooks[1].get(), instance.second, numCenters), feature);
+		//vectorInsert(transformData<MbhYGetter>(codebooks[2].get(), instance.second, numCenters), feature);
 		// Write a line to output
 		outputFile.emplace(instance.first, feature);
 	}
@@ -247,36 +258,39 @@ void generateFeatures(const std::vector<std::string>& filenames, const std::stri
 	return;
 }
 
-/* TODO(yuchi): What's a good interface design to let this binary take some channels and compute away? 
- * My idea: enum DISPLACEMENTS, HOG, HOF, MBHX, ..   
-   ./BagOfWords DISPLACEMENTS HOG
- * not sure if this a good design, definitely no clue how to implement XD
-*/
 int main(int argc, char** argv) {
 
 	// Get all archive names in the specified folder
 	std::string archivesLocation = argv[1];
+	std::string outputLocation = argv[2];		//"SuperTracks/SampleCut=8000/s=
+	const int kNumRandomSamples = std::stoi(argv[3]);//100000
+	const int numCenters = std::stoi(argv[4]);
 
 	std::string trainingSetPath = archivesLocation;
 	std::vector<std::string> trainingSetNames = getArchiveNames(trainingSetPath);
 
 	// Randomly sample some trajectories 
 	std::vector<track> samples(kNumRandomSamples);
-	getTrainingSamples(samples, trainingSetNames, trainingSetPath);
+	getTrainingSamples(samples, trainingSetNames, trainingSetPath, kNumRandomSamples);
 	// Compute codebook from samples
 	std::vector<std::unique_ptr<VlKMeans>> codebooks;
 	// Split the samples
 
 	// Given some tracks, compute 5 x 4000
 	std::cout << "Compute codebooks for 5 channels" << std::endl;
-	//codebooks.push_back(getCodebook<DisplacementsGetter>(samples));
-	codebooks.push_back(getCodebook<HogGetter>(samples));
-	//codebooks.push_back(getCodebook<HofGetter>(samples));
-	codebooks.push_back(getCodebook<MbhXGetter>(samples));
-	codebooks.push_back(getCodebook<MbhYGetter>(samples));
+	codebooks.push_back(getCodebook<DisplacementsGetter>(samples, numCenters, kNumRandomSamples));
+	codebooks.push_back(getCodebook<HogGetter>(samples, numCenters, kNumRandomSamples));
+	codebooks.push_back(getCodebook<HofGetter>(samples, numCenters, kNumRandomSamples));
+	codebooks.push_back(getCodebook<MbhXGetter>(samples, numCenters, kNumRandomSamples));
+	codebooks.push_back(getCodebook<MbhYGetter>(samples, numCenters, kNumRandomSamples));
 
 	std::cout << "Generating training set" << std::endl;
-	generateFeatures(trainingSetNames, trainingSetPath, codebooks, "SuperTracks/HoGMBH/s=" + std::to_string(kNumRandomSamples)+ "/nc=" + std::to_string(numCenters) + ".out");
+	generateFeatures(
+		trainingSetNames, 
+		trainingSetPath, 
+		codebooks, 
+		outputLocation + "/s=" + std::to_string(kNumRandomSamples)+ ",nc=" + std::to_string(numCenters) + ".out",
+		numCenters);
 
 	
 	/* Similar operation for test set*/
