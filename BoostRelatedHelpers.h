@@ -8,6 +8,7 @@
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/assume_abstract.hpp>
 
+/* TODO: functional and file documentation */
 struct point {
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version) {
@@ -47,7 +48,6 @@ point operator/(const point& p1, const float s)
 {
   return point(p1.x / s, p1.y / s);
 }
-
 
 void unnormalizePoints(std::vector<point>& points, const float trajectoryLength, const float mean_x, const float mean_y) {
   for (point& p : points) p = p * trajectoryLength;

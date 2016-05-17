@@ -1,5 +1,6 @@
 #include "BoostRelatedHelpers.h"
 
+// TODO: refactor this into a helper function
 float lengthNormalizedOverlapForTrajectory(const track& t, const std::vector<Box>& boxes) {
 	int overlapCount = 0;
 	for(int i = 0; i < t.coords.size(); i++) {

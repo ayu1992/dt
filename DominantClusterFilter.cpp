@@ -2,6 +2,7 @@
 /* Filters out irrelevnat clusters
  * Adds action label
 **/
+// TODO: refactor this into a helper function
 int main(int argc, char** argv) {
 	// path to results.txt, sortedTrajectories.out
 	std::string path = argv[1];

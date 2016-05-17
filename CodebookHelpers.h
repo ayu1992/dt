@@ -24,6 +24,8 @@ const int numFolds = 5;
 const int numClasses = 13;
 const int videoTrajectoryCap = 10000;	// this is actually videoTrajectoryCap
 const int classTrajectoryCap = 100000;
+
+/* TODO: This file will be deprecated and the functions will live in a library */
 // TODO: Fine as is, but I would make actionlabel an enum in proto instead of string.
 //       Saves all the hustle converting it back and forth between string and int.
 const std::unordered_map<std::string, int> actionLabelLookUp ({

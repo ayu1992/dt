@@ -1,9 +1,11 @@
 #include "BoostRelatedHelpers.h"
 #include <cstdlib>
+#include <cstdio>
 #include <boost/algorithm/string.hpp>
 
 const int NUM_CHANNELS = 5;
 using Data = std::vector<std::vector<float>>;		// N x 4000
+/* TODO: functional and file documentation */
 
 // Read TrainingSet.out (N x 20000), TestSet.out (M x 20000)
 // Parse them into 
@@ -12,10 +14,10 @@ using Data = std::vector<std::vector<float>>;		// N x 4000
 // 3. Hog (N x 4000) and (M x 4000) ...etc
 // Calculate Chi Squared matrices NxN and MxN
 // Output KernelTraining.out, KernelTest.out
-std::vector<float> parseLine(std::vector<std::string>::iterator& strs_it) {
+std::vector<float> parseLine(std::vector<std::string>::iterator& strs_it, const int numCenters) {
 	std::vector<float> ret;  // TODO: If you know what size ret would be, maybe call vector::reserve.
 	std::string::size_type sz;
-	for (int i = 0; i < 4000; ++i) {
+	for (int i = 0; i < numCenters; ++i) {
 		std::vector<std::string> tmp;	// tmp would have 2 elements
 		boost::split(tmp, *strs_it, boost::is_any_of(":"));
 		float value = std::stof(tmp[1], &sz);
@@ -29,6 +31,7 @@ std::vector<float> parseLine(std::vector<std::string>::iterator& strs_it) {
 // this needs to support custom number of channels, same problem as BagOfWords.cpp?
 void parseDataSet(
 	const std::string& filename,  
+	const int numCenters,
 	Data& displacements, // N x 4000
 	Data& hog,
 	Data& hof,
@@ -49,15 +52,15 @@ void parseDataSet(
 		labels.push_back(label);
 		++strs_it;
 
-		displacements.push_back(parseLine(strs_it));
-		hog.push_back(parseLine(strs_it));
-		hof.push_back(parseLine(strs_it));
-		mbhx.push_back(parseLine(strs_it));
-		mbhy.push_back(parseLine(strs_it));		
+		displacements.push_back(parseLine(strs_it, numCenters));
+		hog.push_back(parseLine(strs_it, numCenters));
+		hof.push_back(parseLine(strs_it, numCenters));
+		mbhx.push_back(parseLine(strs_it, numCenters));
+		mbhy.push_back(parseLine(strs_it, numCenters));		
 	}
 }
 
-float computeDotProduct(const std::vector<float>& a, const std::vector<float>& b) {
+inline float computeDotProduct(const std::vector<float>& a, const std::vector<float>& b) {
 	float dot_product = 0.0;
 	auto it1 = a.begin();
 	auto it2 = b.begin();
@@ -68,7 +71,7 @@ float computeDotProduct(const std::vector<float>& a, const std::vector<float>& b
 }
 
 // a, b are the same channel of two different samples. Size of a , b : 4000
-float computeChiSquareDistance(const std::vector<float>& a, const std::vector<float>& b) {
+inline float computeChiSquareDistance(const std::vector<float>& a, const std::vector<float>& b) {
 	float chi_square = 0.0;
 	auto it1 = a.begin();
 	auto it2 = b.begin();
@@ -85,9 +88,14 @@ Data computeChiSquaredMatrix(const Data& testing, const Data& training, float& s
 
 	Data ret(M, std::vector<float>(N));
 	for (int i = 0; i < M; ++i) {
-		for (int j = 0; j < N; ++j) {
-			ret[i][j] = computeChiSquareDistance(testing[i], training[j]);
-			sum += ret[i][j];
+		for (int j = i; j < N; ++j) {
+			float val = computeChiSquareDistance(testing[i], training[j]);
+			ret[i][j] = val;
+			sum += val;
+			if (i != j) {
+				ret[j][i] = val;
+				sum += val;
+			}
 		}
 	}
 	return ret;
@@ -121,7 +129,6 @@ Data computeNormalizedChiSquareDistanceForTesting(
 	float dummy_sum = 0.0;
 	Data ret = computeChiSquaredMatrix(testing, training, dummy_sum);
 
-	///float Ac_test = dummy_sum / (M * N);
 	for (auto& v : ret) {
 		for (float& f : v) f /= Ac;
 	}
@@ -132,6 +139,7 @@ Data computeNormalizedChiSquareDistanceForTesting(
 
 Data buildKernelFromTrainingSet(
 	const std::string& filename, 
+	const int numCenters,
 	const float gamma,
 	Data& displacements, 
 	Data& hog, 
@@ -142,8 +150,7 @@ Data buildKernelFromTrainingSet(
 	std::vector<float>& Ac) {
 
 	// Fill up the arrays
-	//parseDataSet(filename, displacements, hog, hof, mbhx, mbhy, labels);
-	parseDataSet(filename, hog, labels);
+	parseDataSet(filename, numCenters, displacements, hog, hof, mbhx, mbhy, labels);
 
 	const int N = hog.size();	// N : number of training videos
 
@@ -219,29 +226,27 @@ Data buildKernelForTestSet(
 
 void writeKernel(const std::string& filepath, const Data& K, const int M, const int N, const std::vector<int>& labels) {
 	// Write Training Kernel
-	std::ofstream fout;
-	fout.open (filepath, std::fstream::in | std::fstream::out | std::fstream::app);
-	for (int i = 0; i < M; ++i) {
-		fout << labels[i] << " ";		// label
-		fout << "0:" << (i + 1);
-		for (int j = 0; j < N; ++j) fout << " " << (j + 1) << ":" << K[i][j];
-		fout << std::endl;
-	}
+	FILE* fout = fopen(filepath.c_str(), "w");
 
-	fout.close();
+	for (int i = 0; i < M; ++i) {
+		fprintf(fout, "%d 0:%d", labels[i], i + 1);
+		for (int j = 0; j < N; ++j) fprintf(fout, " %d:%f", j + 1, K[i][j]);
+		fprintf(fout, "\n");
+	}
+	return;
 }
 int main(int argc, char** argv) {
-	float gamma = static_cast<float>(std::atof(argv[1]));
-
+	float gamma = std::stof(argv[1]);
+	const int numCenters = std::stoi(argv[2]);
+	const std::string inputFile = argv[3];
+	const std::string outputLocation = argv[4];
 	// Compute a chi-squared kernel over training set
 	Data displacements, hog, hof, mbhx, mbhy;
 	std::vector<int> train_labels, test_labels;
 
 	std::vector<float> Ac_training(5, 0.0);
-
-	//Data train_K = buildKernelFromTrainingSet("NoClustering/Features/HoG/TrainingSet.out", gamma, displacements, hog, hof, mbhx, mbhy, train_labels, Ac_training);	// N x N
-	Data train_K = buildKernelFromTrainingSet("NoClustering/Features/HoG/TrainingSet.out", gamma, hog, train_labels, Ac_training);	// N x N
-	writeKernel("NoClustering/Features/HoG/KernelTraining.txt", train_K, train_K.size(), train_K.size(), train_labels);
+	Data train_K = buildKernelFromTrainingSet(inputFile, numCenters, gamma, displacements, hog, hof, mbhx, mbhy, train_labels, Ac_training);	// N x N
+	writeKernel(outputLocation + "KernelTraining.txt", train_K, train_K.size(), train_K.size(), train_labels);
 	
 	//Data test_K = buildKernelForTestSet("NoClustering/Features/Displacements/TestSet.out", gamma, displacements, hog, hof, mbhx, mbhy, test_labels, Ac_training);
 	//writeKernel("NoClustering/Features/Displacements/KernelTest.txt", test_K, test_K.size(), test_K[0].size(), test_labels);

@@ -6,6 +6,8 @@
 
 #include <boost/functional/hash.hpp>
 #include <cstdio>
+
+/* TODO: functional and file documentation */
 /* Read *.features, output sortedTrajectories */
 // Dimension information to parse input file
 const float TAU_S = 16.0;

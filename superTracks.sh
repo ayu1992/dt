@@ -1,11 +1,12 @@
 DATASET="UCFSports/"
 declare -A CATEGORIES
-#['Riding-Horse']=12 ['Walk-Front']=22 ['Run-Side']=13
-#CATEGORIES=(['Run-Side']=13)
+#['Kicking-Front']=5 - 10
+#CATEGORIES=(['Walk-Front']=22 ['Golf-Swing-Front']=8 ['Swing-Bench']=20)
+CATEGORIES=(['Kicking-Front']=10)
 #CATEGORIES=(['Golf-Swing-Back']=5 ['Golf-Swing-Front']=8 ['SkateBoarding-Front']=12 ['Swing-Bench']=20)
 #CATEGORIES=(['Diving-Side']=14 ['Kicking-Front']=10 ['Kicking-Side']=10)
 #CATEGORIES=(['Lifting']=6 ['Golf-Swing-Side']=5 ['Swing-SideAngle']=13 )
-CATEGORIES=(['Lifting']=6 ['Golf-Swing-Side']=5 ['Swing-SideAngle']=13 ['Diving-Side']=14 ['Kicking-Front']=10 ['Kicking-Side']=10 ['Golf-Swing-Back']=5 ['Golf-Swing-Front']=8 ['SkateBoarding-Front']=12 ['Swing-Bench']=20 ['Riding-Horse']=12 ['Walk-Front']=22 ['Run-Side']=13)
+#CATEGORIES=(['Lifting']=6 ['Golf-Swing-Side']=5 ['Swing-SideAngle']=13 ['Diving-Side']=14 ['Kicking-Front']=10 ['Kicking-Side']=10 ['Golf-Swing-Back']=5 ['Golf-Swing-Front']=8 ['SkateBoarding-Front']=12 ['Swing-Bench']=20 ['Riding-Horse']=12 ['Walk-Front']=22 ['Run-Side']=13)
 RESOLUTION=$DATASET"original/"
 EXTRACTION="idt/"
 PROCESS=1
@@ -24,28 +25,26 @@ make DrawClusters
 make countActualClusters
 #make LocalizationScoreForVideo
 #make DominantClusterFilter
-
+# this run is 8000
 numVideos=150
 progress=0
 bar="[=======================================================================]"
 
 for CATEGORY in "${!CATEGORIES[@]}"			# '!' expands keys, no '!' expands values
 do
-	for ((vid=1; vid <= ${CATEGORIES[$CATEGORY]}; vid++))
+	for ((vid=5; vid <= ${CATEGORIES[$CATEGORY]}; vid++))
 	do 
 		((progress++))
-		for PARAM_R in 0.05 #0.1
-		do 
+		for PARAM_R in 0.025
+ 		do 
 			SECONDS=0
 			#START_TIME=$(date +%s)
-			GRAPH_PATH="ClusteredTrajectories/r="$PARAM_R"/"
+			GRAPH_PATH="ClusteredTrajectories/sample=8000/r="$PARAM_R"/"
 			mkdir -p $GRAPH_PATH								# No op if the folder already exists
 
 			VIDEO_NAME=$RESOLUTION$CATEGORY"/"$EXTRACTION$vid".features"
 			
 			echo "Processing "$VIDEO_NAME
-#			rm $GRAPH_PATH"dij.txt"
-#			rm $GRAPH_PATH"sortedTrajectories.out"
 			
 			for NUM_CLUSTERS in 500
 			do	
@@ -59,12 +58,6 @@ do
 				./BuildGraph $VIDEO_NAME $GRAPH_PATH $CATEGORY$vid $PARAM_R
 				echo "converting distance to similarity"
 				mpiexec -n 8 ../pspectralclustering/distance_to_similarity --input $GRAPH_PATH$CATEGORY$vid"_dij.txt" --output $OUT_PATH"similarity.txt"
-
-
-				# wipe out intermediate data, leave a clean state for this run
-				#rm $OUT_PATH"*.txt"
-
-				#rm $OUT_PATH"*.out"
 
 				echo "Running pspectral"				
 				NUM_SPACE=$(($NUM_CLUSTERS * 3))

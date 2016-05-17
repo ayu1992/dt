@@ -3,7 +3,7 @@
 #include <dirent.h>
 #include <limits>
 #include <random>
-
+/* TODO: functional and file documentation */
 // Needed these lines to work with vlfeat
 extern "C" {
   #include <vl/generic.h>
@@ -260,11 +260,13 @@ void generateFeatures(
 
 int main(int argc, char** argv) {
 
+	/* TODO: Refactor this to accept an archive parser/ txt reader */
+	
 	// Get all archive names in the specified folder
 	std::string archivesLocation = argv[1];
-	std::string outputLocation = argv[2];		//"SuperTracks/SampleCut=8000/s=
+	std::string outputLocation = argv[2];		//"SuperTracks/SampleCut=8000/
 	const int kNumRandomSamples = std::stoi(argv[3]);//100000
-	const int numCenters = std::stoi(argv[4]);
+	const int numCenters = std::stoi(argv[4]);		// 500
 
 	std::string trainingSetPath = archivesLocation;
 	std::vector<std::string> trainingSetNames = getArchiveNames(trainingSetPath);
@@ -272,6 +274,7 @@ int main(int argc, char** argv) {
 	// Randomly sample some trajectories 
 	std::vector<track> samples(kNumRandomSamples);
 	getTrainingSamples(samples, trainingSetNames, trainingSetPath, kNumRandomSamples);
+
 	// Compute codebook from samples
 	std::vector<std::unique_ptr<VlKMeans>> codebooks;
 	// Split the samples
