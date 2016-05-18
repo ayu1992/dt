@@ -171,14 +171,14 @@ private:
 	friend std::ostream & operator<<(std::ostream &os, const videoRep& video);
 	template<class Archive>
 	void serialize(Archive & ar, const unsigned int version) {
-		ar & _dominantCluster;
+		ar & _tracks;
 		ar & _classLabel;			// label of action class
     ar & _vid;
     ar & _videoWidth;
     ar & _videoHeight;
 	}
 	// a video is represented by One trajectory cluster/list
-	trackList _dominantCluster;
+	trackList _tracks;
 	int _classLabel;	
 	int _vid;
   int _videoWidth;
@@ -186,9 +186,19 @@ private:
 
 public:
 	videoRep() {};
-	videoRep(const trackList& dominantCluster, const int classLabel, const int vid, const int videoWidth, const int videoHeight): _dominantCluster(dominantCluster), _classLabel(classLabel), _vid(vid), _videoWidth(videoWidth), _videoHeight(videoHeight) {}
+	videoRep(
+    const trackList& tracks,
+    const int classLabel, 
+    const int vid, 
+    const int videoWidth, 
+    const int videoHeight): 
+  _tracks(tracks), 
+  _classLabel(classLabel), 
+  _vid(vid),
+  _videoWidth(videoWidth), 
+  _videoHeight(videoHeight) {}
 
-	const trackList& largestCluster() const {return _dominantCluster;}
+	const trackList& getTrackList() const {return _tracks;}
 	const int classLabel() const {return _classLabel;}
 	const int vid() const {return _vid;}
   const int videoWidth() const {return _videoWidth;}

@@ -2,6 +2,7 @@
 //#define VISUALIZE
 using namespace cv;
 
+// File and function documentation
 void parseAndDraw(
 	const std::vector<std::string> trjInStrings,
 	std::vector<Mat>& frames,

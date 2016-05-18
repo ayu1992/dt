@@ -6,6 +6,7 @@
 const int NUM_CHANNELS = 5;
 using Data = std::vector<std::vector<float>>;		// N x 4000
 /* TODO: functional and file documentation */
+// TODO: performance engineering : speed up!
 
 // Read TrainingSet.out (N x 20000), TestSet.out (M x 20000)
 // Parse them into 

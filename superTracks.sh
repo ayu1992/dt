@@ -1,87 +1,56 @@
-DATASET="UCFSports/"
-declare -A CATEGORIES
-#['Kicking-Front']=5 - 10
-#CATEGORIES=(['Walk-Front']=22 ['Golf-Swing-Front']=8 ['Swing-Bench']=20)
-CATEGORIES=(['Kicking-Front']=10)
-#CATEGORIES=(['Golf-Swing-Back']=5 ['Golf-Swing-Front']=8 ['SkateBoarding-Front']=12 ['Swing-Bench']=20)
-#CATEGORIES=(['Diving-Side']=14 ['Kicking-Front']=10 ['Kicking-Side']=10)
-#CATEGORIES=(['Lifting']=6 ['Golf-Swing-Side']=5 ['Swing-SideAngle']=13 )
-#CATEGORIES=(['Lifting']=6 ['Golf-Swing-Side']=5 ['Swing-SideAngle']=13 ['Diving-Side']=14 ['Kicking-Front']=10 ['Kicking-Side']=10 ['Golf-Swing-Back']=5 ['Golf-Swing-Front']=8 ['SkateBoarding-Front']=12 ['Swing-Bench']=20 ['Riding-Horse']=12 ['Walk-Front']=22 ['Run-Side']=13)
-RESOLUTION=$DATASET"original/"
-EXTRACTION="idt/"
-PROCESS=1
-
-#rm BuildGraph
-#rm MergeTracks
-#rm DrawTracks
-#rm GetCoordsForClusters
-#rm DrawClusters
-#rm countActualClusters
-make BuildGraph
-make MergeTracks
-make DrawTracks
-make GetCoordsForClusters
-make DrawClusters
-make countActualClusters
-#make LocalizationScoreForVideo
-#make DominantClusterFilter
-# this run is 8000
-numVideos=150
+source ./configurations.sh
 progress=0
-bar="[=======================================================================]"
 
 for CATEGORY in "${!CATEGORIES[@]}"			# '!' expands keys, no '!' expands values
 do
-	for ((vid=5; vid <= ${CATEGORIES[$CATEGORY]}; vid++))
+	for ((vid=1; vid <= ${CATEGORIES[$CATEGORY]}; vid++))
 	do 
 		((progress++))
-		for PARAM_R in 0.025
+		for PENALTY_R in "${_TEMPORAL_MISALIGNMENT_PENALTY_R[@]}"
  		do 
 			SECONDS=0
-			#START_TIME=$(date +%s)
-			GRAPH_PATH="ClusteredTrajectories/sample=8000/r="$PARAM_R"/"
+			_GRAPH_PATH=$_CLUSTERED_TRACKS_PATH"r="$PENALTY_R"/"
 			mkdir -p $GRAPH_PATH								# No op if the folder already exists
 
-			VIDEO_NAME=$RESOLUTION$CATEGORY"/"$EXTRACTION$vid".features"
+			VIDEO_NAME=$_ARCHIVE_LOCATION"/"$vid".out"
 			
 			echo "Processing "$VIDEO_NAME
 			
-			for NUM_CLUSTERS in 500
+			for NUM_CLUSTERS in "${_MAX_NUM_CLUSTER[@]}"
 			do	
 				# Output location
-				OUT_PATH=$GRAPH_PATH"c="$NUM_CLUSTERS"/p"$PROCESS"/"					
-				mkdir -p $OUT_PATH								# No op if the folder already exists
+				OUTPUT_LOCATION=$GRAPH_PATH"c="$NUM_CLUSTERS"/"					
+				mkdir -p $OUTPUT_LOCATION								# No op if the folder already exists
 
-				rm $OUT_PATH"result.txt"
-				rm $OUT_PATH"similarity.txt"
+				rm $OUTPUT_LOCATION"result.txt"
+				rm $OUTPUT_LOCATION"similarity.txt"
 
-				./BuildGraph $VIDEO_NAME $GRAPH_PATH $CATEGORY$vid $PARAM_R
+				./BuildGraph $VIDEO_NAME $GRAPH_PATH $CATEGORY$vid $PENALTY_R
+
 				echo "converting distance to similarity"
-				mpiexec -n 8 ../pspectralclustering/distance_to_similarity --input $GRAPH_PATH$CATEGORY$vid"_dij.txt" --output $OUT_PATH"similarity.txt"
+				mpiexec -n $_NUM_DISTANCE_TO_SIMILARITY_WORKERS $_DISTANCE_TO_SIMILARITY --input $GRAPH_PATH$CATEGORY$vid"_dij.txt" --output $OUTPUT_LOCATION"similarity.txt"
 
 				echo "Running pspectral"				
 				NUM_SPACE=$(($NUM_CLUSTERS * 3))
-				mpiexec -n 10 ../pspectralclustering/evd --arpack_iterations 1000 --arpack_tolerance 0.000001 --eigenvalue $NUM_CLUSTERS --eigenspace $NUM_SPACE --input $OUT_PATH"similarity.txt" --eigenvalues_output $OUT_PATH"eigenvalues.txt" --eigenvectors_output $OUT_PATH"eigenvectors.txt"
-				mpiexec -n 4 ../pspectralclustering/kmeans --num_clusters $NUM_CLUSTERS --input $OUT_PATH"eigenvectors.txt" --output $OUT_PATH"result.txt"
+				mpiexec -n $_NUM_EVD_WORKERS $_EVD --arpack_iterations 1000 --arpack_tolerance 0.000001 --eigenvalue $NUM_CLUSTERS --eigenspace $NUM_SPACE --input $OUTPUT_LOCATION"similarity.txt" --eigenvalues_output $OUTPUT_LOCATION"eigenvalues.txt" --eigenvectors_output $OUTPUT_LOCATION"eigenvectors.txt"
+				mpiexec -n $_NUM_KMEANS_WORKERS $_KMEANS --num_clusters $NUM_CLUSTERS --input $OUTPUT_LOCATION"eigenvectors.txt" --output $OUTPUT_LOCATION"result.txt"
 				
 				echo "Counting actual clusters"
-				./countActualClusters $OUT_PATH $CATEGORY$vid
+				./countActualClusters $OUTPUT_LOCATION $CATEGORY$vid
 				
 				# Visualize partition quality
 				#echo "Drawing clustered results"
-				#./GetCoordsForClusters $GRAPH_PATH$CATEGORY$vid $OUT_PATH
-				#./DrawClusters $OUT_PATH $RESOLUTION$CATEGORY"/" $CATEGORY $vid $NUM_CLUSTERS
+				#./GetCoordsForClusters $GRAPH_PATH$CATEGORY$vid $OUTPUT_LOCATION
+				#./DrawClusters $OUTPUT_LOCATION $RESOLUTION$CATEGORY"/" $CATEGORY $vid $NUM_CLUSTERS
 								
 				# Supertracks
 				echo "Merging trajectories"
-				./MergeTracks $GRAPH_PATH $OUT_PATH $NUM_CLUSTERS $CATEGORY $vid
+				./MergeTracks $GRAPH_PATH $OUTPUT_LOCATION $NUM_CLUSTERS $CATEGORY $vid
 								
 				# Visualize super tracks
 				#echo "Drawing super tracks"
-				#./DrawTracks $OUT_PATH $RESOLUTION$CATEGORY"/" $CATEGORY $vid
+				#./DrawTracks $OUTPUT_LOCATION $RESOLUTION$CATEGORY"/" $CATEGORY $vid
 				
-				#END_TIME=$(date +%s)
-				#EXECUTION_TIME=$(($END_TIME - $START_TIME))
 				duration=$SECONDS
 				echo "==========================$(($duration / 60)) minutes and $(($duration % 60)) seconds=========================="
 				

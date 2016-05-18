@@ -1,9 +1,7 @@
 #include "CodebookHelpers.h"
 #include "BoostRelatedHelpers.h"
 
-/* Seperate data into training and testing sets
-   Delay cross validation to libsvm
-*/
+/* TODO: This file will be deprecated and the functions will live in a library */
 void generateTrainingAndTestSets(
 	const std::map<int, std::vector<int>>& usableVideos, 
 	std::map<int, std::vector<int>>& vidForTraining, 

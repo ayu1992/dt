@@ -7,7 +7,10 @@
 
 #include <boost/algorithm/string.hpp>
 #include "BoostRelatedHelpers.h"
-
+/*
+TODO: file and functional documentation
+speed up
+*/
 using Edges = std::vector<std::vector<float>>;		// Express graph edges in terms of a KxK matrix
 
 template <typename T>

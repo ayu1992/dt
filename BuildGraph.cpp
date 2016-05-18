@@ -8,11 +8,11 @@
 #include <cstdio>
 
 /* TODO: functional and file documentation */
-/* Read *.features, output sortedTrajectories */
+/* Read *.out, output sortedTrajectories */
 // Dimension information to parse input file
 const float TAU_S = 16.0;
 const int TAU_T = 8;
-const int MAX_NUM_TRACKS = 8000;
+const int MAX_NUM_TRACKS = 5000;
 
 using Graph = std::unordered_map<std::pair<int, int>, float, boost::hash<std::pair<int, int>>>; 
 
@@ -152,24 +152,27 @@ int main(int argc, char** argv) {
 
   float r = std::stof(argv[4]);
 
-  // Read and pack feature dump into Tracks(temporary container)
-  std::vector<track> temporary; 
-  std::vector<std::string> trajInStrings;
-  int videoWidth, videoHeight;
-  parseFeaturesToTracks(videoPath, trajInStrings, temporary, videoWidth, videoHeight); 
-  std::cout << "[BuildGraph] "<< temporary.size() << " trajectories in total" << std::endl;
+  videoRep video;
+  restoreVideoRep(videoPath, video);
 
+  std::vector<std::pair<int, track>> dummyIDAndTracks = video.getTrackList().tracks();
   std::vector<track> tracks;
+  std::transform(dummyIDAndTracks.begin(), dummyIDAndTracks.end(), tracks.begin(), 
+    [](const std::pair<int, track> p){
+      return p.second;
+    });
+  
+  std::cout << "[BuildGraph] " << tracks.size() << " trajectories in total" << std::endl;
 
-  if (temporary.size() > MAX_NUM_TRACKS) {
+  if (tracks.size() > MAX_NUM_TRACKS) {
     // Random sample some tracks 
-    std::random_shuffle(temporary.begin(), temporary.end());
-    std::vector<track> samples(temporary.begin(), temporary.begin() + MAX_NUM_TRACKS);
+    std::random_shuffle(tracks.begin(), tracks.end());
+    std::vector<track> samples(tracks.begin(), tracks.begin() + MAX_NUM_TRACKS);
+    tracks.clear();
     tracks = samples;
-  } else {
-    tracks = temporary;
   }
-    std::cout << tracks.size() << "tracks" << std::endl;
+
+  std::cout << tracks.size() << "tracks" << std::endl;
 
   // Sort Tracks by ending frame for ease of graph construction
   std::sort(
@@ -178,7 +181,7 @@ int main(int argc, char** argv) {
     [](const track &a, const track &b) {
       return a.endingFrame < b.endingFrame;});
 
-  outputSortedTrajectories(outputPath+videoName, tracks);
+  outputSortedTrajectories(outputPath + videoName, tracks);
 
   // Normalize the coordinates (only used in this file)
   std::cout << "[BuildGraph] Normalizing coordinates by frame size"<< std::endl;  
@@ -186,7 +189,7 @@ int main(int argc, char** argv) {
   std::vector<std::vector<point>> normalizedCoords;  // in identical order as tracks
 
   for (const auto& t : tracks) {
-    normalizedCoords.push_back(normalizeCoordsByFrame(t.coords, videoWidth, videoHeight));
+    normalizedCoords.push_back(normalizeCoordsByFrame(t.coords, video.videoWidth(), video.videoHeight()));
   }
 
   // (traj index i, traj index j) -> s_ij

@@ -3,6 +3,7 @@
 #include <dirent.h>
 #include <limits>
 #include <random>
+
 /* TODO: functional and file documentation */
 // Needed these lines to work with vlfeat
 extern "C" {
@@ -236,15 +237,15 @@ void generateFeatures(
 		if (instance.second.empty())	continue;
 		//std::cout << instance.second.size() << " tracks" << std::endl;
 		
-		std::cout << "Displacements" << std::endl;
+//		std::cout << "Displacements" << std::endl;
 		std::vector<float> feature = transformData<DisplacementsGetter>(codebooks[0].get(), instance.second, numCenters);
-		std::cout << "Hog" << std::endl;
+//		std::cout << "Hog" << std::endl;
 		vectorInsert(transformData<HogGetter>(codebooks[1].get(), instance.second, numCenters), feature);
-		std::cout << "Hof" << std::endl;
+//		std::cout << "Hof" << std::endl;
 		vectorInsert(transformData<HofGetter>(codebooks[2].get(), instance.second, numCenters), feature);
-		std::cout << "MbhX" << std::endl;
+//		std::cout << "MbhX" << std::endl;
 		vectorInsert(transformData<MbhXGetter>(codebooks[3].get(), instance.second, numCenters), feature);
-		std::cout << "MbhY" << std::endl;
+//		std::cout << "MbhY" << std::endl;
 		vectorInsert(transformData<MbhYGetter>(codebooks[4].get(), instance.second, numCenters), feature);
 		
 		//std::vector<float> feature = transformData<MbhXGetter>(codebooks[0].get(), instance.second, numCenters);
@@ -264,7 +265,7 @@ int main(int argc, char** argv) {
 	
 	// Get all archive names in the specified folder
 	std::string archivesLocation = argv[1];
-	std::string outputLocation = argv[2];		//"SuperTracks/SampleCut=8000/
+	std::string outputLocation = argv[2];		//"SuperTracks/SampleCut=8000/All/
 	const int kNumRandomSamples = std::stoi(argv[3]);//100000
 	const int numCenters = std::stoi(argv[4]);		// 500
 
