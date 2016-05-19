@@ -4,21 +4,29 @@ source ./configurations.sh
 gamma="$(seq 0.015625 0.1 1)"
 cost="$(seq 5 0.1 1024)"
 
-R=0.025								# todo: make this a range of gammas, specified in the configs file
-
-PATH="SuperTracks/sampleCut="$RAW_TRACK_CAP"/"$CHANNEL"/"
-
-./BagOfWords "ClusteredTrajectories/sample="$RAW_TRACK_CAP"/r="$R"/c=500/" $PATH $CODEBOOK_SAMPLE $CODEBOOK_CENTERS 
-
-TRAININGSET="s="$CODEBOOK_SAMPLE",nc="$CODEBOOK_CENTERS".out"
-
-for g in $gamma
+for PENALTY_R in "${_TEMPORAL_MISALIGNMENT_PENALTY_R[@]}"
 do
-  for c in $cost
-  do 
-  	echo "g:"$g", c:"$c
-  	./ChiSquaredSVM $g $CODEBOOK_CENTERS $PATH$TRAININGSET $PATH
-  	../libsvm/svm-train -s 0 -t 4 -c $c -v 150 -q $PATH"KernelTraining.txt"
-  done	
+	for NUM_CLUSTERS in "${_MAX_NUM_CLUSTER[@]}"
+	do	
+		./BagOfWords $_CLUSTERED_TRACKS_PATH"/r="$PENALTY_R"/c="$NUM_CLUSTERS"/archive/" $_SUPERTRACKS_PATH $CODEBOOK_SAMPLE $CODEBOOK_CENTERS 
+		
+		TRAININGSET_LOCATION=$_SUPERTRACKS_PATH"r="$PENALTY_R"/c="$NUM_CLUSTERS"/"
+		mkdir -p $TRAININGSET_LOCATION
+
+		TRAININGSET=$TRAININGSET_LOCATION"s="$CODEBOOK_SAMPLE",nc="$CODEBOOK_CENTERS".out"
+
+		for g in $gamma
+		do
+		  for c in $cost
+		  do 
+		  	echo "g:"$g", c:"$c
+		  	./ChiSquaredSVM $g $CODEBOOK_CENTERS $TRAININGSET $TRAININGSET_LOCATION
+		  	$_SVM_TRAIN -s 0 -t 4 -c $c -v $_NUM_VIDEOS -q $TRAININGSET_LOCATION"KernelTraining.txt"
+		  done	
+		done
+	done
 done
+
+
+
 

@@ -203,7 +203,7 @@ int main(int argc, char** argv) {
 	/* ARCHIVE OUTPUTS*/
 	std::cout << "Output super tracks to archive" << std::endl;
 	videoRep video(superTracks, ucfActionClassMap[videoCategory], std::stoi(vid), -1, -1);	// Set videoWidth and videoHeight to nil
-  	std::ofstream ofs(clusterResultPath + videoCategory + "_" + vid + ".out");
+  	std::ofstream ofs(clusterResultPath + "archive/" +videoCategory + "_" + vid + ".out");
 	{
 	    boost::archive::binary_oarchive oa(ofs);
 	    oa << video;   	 							// archive and stream closed when destructors are called
@@ -211,10 +211,10 @@ int main(int argc, char** argv) {
 
 	/* RAW DATA OUTPUTS*/
 	std::cout << "Writing edge weights" << std::endl;
-	writeEdgesToFile(clusterResultPath + videoName + "_edges.txt", edgeWeights);
+	writeEdgesToFile(clusterResultPath + "edges/" + videoName + "_edges.txt", edgeWeights);
 
 	std::cout << "Writing super tracks in txt form" << std::endl;
-	writeSuperTracksToFile(clusterResultPath + videoName + "_superTracks.txt", superTracks);
+	writeSuperTracksToFile(clusterResultPath + "supertracks/" + videoName + "_superTracks.txt", superTracks);
 
 	//std::cout << "Writing coords" << std::endl;
 	//writeCoordsToFile(clusterResultPath, superTracks);

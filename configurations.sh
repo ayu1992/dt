@@ -40,6 +40,8 @@ _PATH_TO_IDT_BINARY="../improved_trajectory_release/release/DenseTrackStab"
 _ARCHIVE_LOCATION="RawTracks/"
 
 #### Regarding superTracks.sh ####
+
+# Path to parallel spectral clustering binaries
 _PATH_TO_PSPECTRAL="../pspectralclustering/"
 _DISTANCE_TO_SIMILARITY=$_PATH_TO_PSPECTRAL"distance_to_similarity"
 _EVD=$_PATH_TO_PSPECTRAL"evd"
@@ -78,3 +80,9 @@ _CODEBOOK_SAMPLE=5000
 # Dimension of each codebook
 # In the Dense Track literature, this is set to 4,000
 _CODEBOOK_CENTERS=500
+
+# Location to store super tracks and related files (supertracks in .txt and archive form, edges files, actualNumClusters)
+_SUPERTRACKS_PATH="SuperTracks/sampleCut="$RAW_TRACK_CAP"/"$CHANNEL"/"
+
+_PATH_TO_LIBSVM="../libsvm/"
+_SVM_TRAIN=$_PATH_TO_LIBSVM"svm-train"

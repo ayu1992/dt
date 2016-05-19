@@ -264,7 +264,7 @@ int main(int argc, char** argv) {
 	/* TODO: Refactor this to accept an archive parser/ txt reader */
 	
 	// Get all archive names in the specified folder
-	std::string archivesLocation = argv[1];
+	std::string archivesLocation = argv[1];		// Location of supertracks
 	std::string outputLocation = argv[2];		//"SuperTracks/SampleCut=8000/All/
 	const int kNumRandomSamples = std::stoi(argv[3]);//100000
 	const int numCenters = std::stoi(argv[4]);		// 500

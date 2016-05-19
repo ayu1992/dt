@@ -43,6 +43,10 @@ do
 				#./GetCoordsForClusters $GRAPH_PATH$CATEGORY$vid $OUTPUT_LOCATION
 				#./DrawClusters $OUTPUT_LOCATION $RESOLUTION$CATEGORY"/" $CATEGORY $vid $NUM_CLUSTERS
 								
+				mkdir -p $OUTPUT_LOCATION"edges/"
+				mkdir -p $OUTPUT_LOCATION"supertracks/"		# Here we store supertracks in txt form
+				mkdir -p $OUTPUT_LOCATION"archive/"			# Here we store supertracks in archive form
+				
 				# Supertracks
 				echo "Merging trajectories"
 				./MergeTracks $GRAPH_PATH $OUTPUT_LOCATION $NUM_CLUSTERS $CATEGORY $vid
