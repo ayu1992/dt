@@ -1,3 +1,4 @@
+#!/bin/bash
 ################################ Set up configurations for Dataset ##############################
 
 ################################ Dataset-specific configurations ################################
@@ -10,14 +11,14 @@ _DATASET="UCFSports"
 _VIDEO_LOCATION="$_DATASET/original/"	
 
 # Total number of videos in this dataset, over all classes
-_NUM_VIDEOS=150
+_NUM_VIDEOS=8
 
 _VIDEO_TYPE=".vob"
 
 # Categories and number of videos under each category in the dataset
 declare -A CATEGORIES
 #CATEGORIES=(['Diving-Side']=14 ['Golf-Swing-Back']=5 ['Golf-Swing-Front']=8 ['Golf-Swing-Side']=5 ['Kicking-Front']=10 ['Kicking-Side']=10 ['Lifting']=6 ['Riding-Horse']=12 ['Run-Side']=13 ['SkateBoarding-Front']=12 ['Swing-Bench']=20 ['Swing-SideAngle']=13 ['Walk-Front']=22)
-CATEGORIES=(['Kicking-Front']=1)
+CATEGORIES=(['Kicking-Front']=5 ['Diving-Side']=3)
 
 ################################ Strategy-related configurations ################################
 
@@ -50,17 +51,17 @@ _NUM_KMEANS_WORKERS=4
 
 # Max number of trajectories each video can own. If the original number of trajectories exceed
 # this amount, we will random sample $_RAW_TRACK_CAP tracks and discard the rest
-_RAW_TRACK_CAP=8000
+_RAW_TRACK_CAP=4000
 
 # Values need to be seperated by spaces
-_TEMPORAL_MISALIGNMENT_PENALTY_R=(0.4 0.6 0.55)
+_TEMPORAL_MISALIGNMENT_PENALTY=(2)
 
 # Maximum number of clusters pspectralclustering can make, the number of non-empty clusters after 
 # pspectralclustering tend to be much lower than this amount
-_MAX_NUM_CLUSTER=(500)
+_MAX_NUM_CLUSTER=(100)
 
 # Location to store the results of spectral clustered trajectories
-_CLUSTERED_TRACKS_PATH="ClusteredTrajectories/sample="$_RAW_TRACK_CAP"/"
+_CLUSTERED_TRACKS_PATH="ClusteredTrajectories/sample=$_RAW_TRACK_CAP/"
 
 ################################ Regarding looScore.sh ########################################
 
@@ -72,14 +73,14 @@ _CHANNEL=All
 
 # Sample $_CODEBOOK_SAMPLE trajectories from Training Set to build codebooks
 # In the Dense Track literature, this is set to 100,000
-_CODEBOOK_SAMPLE=5000
+_CODEBOOK_SAMPLE=200
 
 # Dimension of each codebook
 # In the Dense Track literature, this is set to 4,000
-_CODEBOOK_CENTERS=500
+_CODEBOOK_CENTERS=50
 
 # Location to store super tracks and related files (supertracks in .txt and archive form, edges files, actualNumClusters)
-_SUPERTRACKS_PATH="SuperTracks/sampleCut="$RAW_TRACK_CAP"/"$CHANNEL"/"
+_SUPERTRACKS_PATH="SuperTracks/sampleCut=$_RAW_TRACK_CAP/$_CHANNEL/"
 
 _PATH_TO_LIBSVM="../libsvm/"
 _SVM_TRAIN=$_PATH_TO_LIBSVM"svm-train"

@@ -308,3 +308,43 @@ void writeCoordsToFile(const std::string& path, const trackList& tList ) {
   }
   ots.close();
 }
+
+template<typename T>
+std::vector<T> randomSample(const std::vector<T>& source, const int numSamples) {
+  std::vector<T> copy(source);
+  std::random_shuffle(copy.begin(), copy.end());
+  std::vector<T> samples(copy.begin(), copy.begin() + numSamples);
+  return samples;
+}
+
+template <typename Functor>
+bool checkIsFeatureEmpty(const track& t) {
+  return !Functor()(t).size();
+}
+bool checkContainsEmptyFeature(const track& t) {
+  return 
+    checkIsFeatureEmpty<DisplacementsGetter>(t) || 
+      checkIsFeatureEmpty<HogGetter>(t) ||
+      checkIsFeatureEmpty<HofGetter>(t) ||
+      checkIsFeatureEmpty<MbhXGetter>(t)||
+      checkIsFeatureEmpty<MbhYGetter>(t);
+}
+
+void checkContainNaN(const std::vector<track>& tracks) {
+  std::cout << "Checking for dirty data" << std::endl;
+  bool isDirty;
+  for (const auto& t : tracks) {
+    isDirty = false;
+    std::for_each(t.displacements.begin(), t.displacements.end(), [&isDirty](const point& p){
+      if (!std::isfinite(p.x) || !std::isfinite(p.y)) isDirty = true;
+    });
+
+    if(std::any_of(t.hog.begin(), t.hog.end(), [](const float& f){return !std::isfinite(f);})
+    || std::any_of(t.hof.begin(), t.hof.end(), [](const float& f){return !std::isfinite(f);})
+    || std::any_of(t.mbhx.begin(), t.mbhx.end(), [](const float& f){return !std::isfinite(f);})
+    || std::any_of(t.mbhy.begin(), t.mbhy.end(), [](const float& f){return !std::isfinite(f);})) {
+      isDirty = true;
+    }
+    if (isDirty) std::cout << "===========================Dirty data============================" << std::endl;
+  }
+}

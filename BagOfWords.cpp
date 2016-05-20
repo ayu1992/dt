@@ -50,49 +50,52 @@ void reservoirSample(
 	samples[i] = t;
 }
 
-void getTrainingSamples(
+void getTrainingSamplesByReservoirSampling(
 	std::vector<track>& samples,
 	const std::vector<std::string>& archiveNames, 
 	const std::string archivesLocation, 
 	const int kNumRandomSamples) {
 	int j = 0;
 	for (const std::string& path : archiveNames) {
+		// TODO (ananyu) : refactor this into videoRep's interface
 		videoRep video;
 		restoreVideoRep(archivesLocation + path, video);
+		std::cout << "Video contains " << video.getTrackList().tracks().size() << "tracks " << std::endl;
 		for (const auto& id_and_track : video.getTrackList().tracks()) {
 			reservoirSample(samples, kNumRandomSamples, j++, id_and_track.second);
 		}
 	}
 }
 
-void checkContainNaN(const std::vector<track>& tracks) {
-	std::cout << "Checking for dirty data" << std::endl;
-	bool isDirty;
-	for (const auto& t : tracks) {
-		isDirty = false;
-		std::for_each(t.displacements.begin(), t.displacements.end(), [&isDirty](const point& p){
-			if (!std::isfinite(p.x) || !std::isfinite(p.y))	isDirty = true;
-		});
-
-		if(std::any_of(t.hog.begin(), t.hog.end(), [](const float& f){return !std::isfinite(f);})
-		|| std::any_of(t.hof.begin(), t.hof.end(), [](const float& f){return !std::isfinite(f);})
-		|| std::any_of(t.mbhx.begin(), t.mbhx.end(), [](const float& f){return !std::isfinite(f);})
-		|| std::any_of(t.mbhy.begin(), t.mbhy.end(), [](const float& f){return !std::isfinite(f);})) {
-			isDirty = true;
+std::vector<track> getTrainingSamplesByRandomSampling(
+	const std::vector<std::string>& archiveNames, 
+	const std::string archivesLocation, 
+	const int kNumRandomSamples) {
+	
+	std::vector<track> pool;
+	for (const std::string& path : archiveNames) {
+		videoRep video;
+		restoreVideoRep(archivesLocation + path, video);
+		for (const auto& id_and_track : video.getTrackList().tracks()) {
+			pool.push_back(id_and_track.second);
 		}
-		if (isDirty) std::cout << "===========================Dirty data============================" << std::endl;
-	}
+	}	
+	std::cout << "Pool size: " << pool.size() << std::endl;
+	return randomSample(pool, kNumRandomSamples);
 }
 
 template <typename Functor>
 std::unique_ptr<float[]> getData (const std::vector<track>& tracks) {
+
 	std::unique_ptr<float[]> data(new float[tracks.size() * Functor::dimension]);
 	int row = 0;
 	for (const auto& t : tracks) {
 		const std::vector<float>& track_data = Functor()(t);
+		
 		for (int i = 0; i < Functor::dimension; ++i) {
 			data[row * Functor::dimension + i] = track_data[i];
 		}
+		
 		++row;
 	}
 	return data;
@@ -140,12 +143,14 @@ std::unique_ptr<VlKMeans> makeCodebook(float* data, const int numData, const int
 
 template <typename Functor>
 std::unique_ptr<VlKMeans> getCodebook(const std::vector<track>& trainingSet, const int numCenters, const int kNumRandomSamples) {
-	// checkContainNaN(trainingSet);
+	 //checkContainNaN(trainingSet);
 	std::unique_ptr<float []> data = getData<Functor>(trainingSet);
 	return makeCodebook<Functor>(data.get(), kNumRandomSamples, numCenters);	
 }
 
-std::vector<LabelAndTracks> getVideoLabelToTracks(const std::vector<std::string>& filenames, const std::string& pathToFiles) {
+std::vector<LabelAndTracks> getVideoLabelToTracks(
+	const std::vector<std::string>& filenames, 
+	const std::string& pathToFiles) {
 	std::vector<LabelAndTracks> ret;
 	for (const std::string& filename : filenames) {
 		videoRep video;
@@ -248,10 +253,6 @@ void generateFeatures(
 //		std::cout << "MbhY" << std::endl;
 		vectorInsert(transformData<MbhYGetter>(codebooks[4].get(), instance.second, numCenters), feature);
 		
-		//std::vector<float> feature = transformData<MbhXGetter>(codebooks[0].get(), instance.second, numCenters);
-		//vectorInsert(transformData<MbhYGetter>(codebooks[1].get(), instance.second, numCenters), feature);
-		//vectorInsert(transformData<MbhXGetter>(codebooks[1].get(), instance.second, numCenters), feature);
-		//vectorInsert(transformData<MbhYGetter>(codebooks[2].get(), instance.second, numCenters), feature);
 		// Write a line to output
 		outputFile.emplace(instance.first, feature);
 	}
@@ -272,14 +273,18 @@ int main(int argc, char** argv) {
 	std::string trainingSetPath = archivesLocation;
 	std::vector<std::string> trainingSetNames = getArchiveNames(trainingSetPath);
 
-	// Randomly sample some trajectories 
-	std::vector<track> samples(kNumRandomSamples);
-	getTrainingSamples(samples, trainingSetNames, trainingSetPath, kNumRandomSamples);
+	// Randomly sample some trajectories to build codebooks
+	// If there is huge amount of trajectories in the training data, use reservoir sampling by uncommenting the following two lines
+	// std::vector<track> samples(kNumRandomSamples);
+	// getTrainingSamplesByReservoirSampling(samples, trainingSetNames, trainingSetPath, kNumRandomSamples);
+	
+	// If there's only a few hundreds of trajectories, random sampling is recommended
+	std::vector<track> samples = getTrainingSamplesByRandomSampling(trainingSetNames, trainingSetPath, kNumRandomSamples);
+
+	std::cout << samples.size() << "samples" << std::endl;
 
 	// Compute codebook from samples
 	std::vector<std::unique_ptr<VlKMeans>> codebooks;
-	// Split the samples
-
 	// Given some tracks, compute 5 x 4000
 	std::cout << "Compute codebooks for 5 channels" << std::endl;
 	codebooks.push_back(getCodebook<DisplacementsGetter>(samples, numCenters, kNumRandomSamples));
@@ -295,14 +300,6 @@ int main(int argc, char** argv) {
 		codebooks, 
 		outputLocation + "/s=" + std::to_string(kNumRandomSamples)+ ",nc=" + std::to_string(numCenters) + ".out",
 		numCenters);
-
 	
-	/* Similar operation for test set*/
-	/*
-	std::cout << "Generating test set" << std::endl;
-	std::string testSetPath = archivesLocation + "/Test/";
-	std::vector<std::string> testSetNames = getArchiveNames(testSetPath);
-	generateFeatures(testSetNames, testSetPath, codebooks, "NoClustering/Features/HoG/TestSet.out");
-*/
 	return 0;
 }

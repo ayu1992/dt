@@ -16,7 +16,7 @@ using Data = std::vector<std::vector<float>>;		// N x 4000
 // Calculate Chi Squared matrices NxN and MxN
 // Output KernelTraining.out, KernelTest.out
 std::vector<float> parseLine(std::vector<std::string>::iterator& strs_it, const int numCenters) {
-	std::vector<float> ret;  // TODO: If you know what size ret would be, maybe call vector::reserve.
+	std::vector<float> ret;
 	std::string::size_type sz;
 	for (int i = 0; i < numCenters; ++i) {
 		std::vector<std::string> tmp;	// tmp would have 2 elements

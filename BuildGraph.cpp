@@ -1,18 +1,16 @@
-#include "BoostRelatedHelpers.h"
+#include <boost/functional/hash.hpp>
+#include <cstdio>
 #include <ctime>
 #include <dirent.h>
 #include <limits>
 #include <random>
 
-#include <boost/functional/hash.hpp>
-#include <cstdio>
-
+#include "BoostRelatedHelpers.h"
 /* TODO: functional and file documentation */
+
 /* Read *.out, output sortedTrajectories */
-// Dimension information to parse input file
 const float TAU_S = 16.0;
 const int TAU_T = 8;
-const int MAX_NUM_TRACKS = 5000;
 
 using Graph = std::unordered_map<std::pair<int, int>, float, boost::hash<std::pair<int, int>>>; 
 
@@ -34,8 +32,7 @@ inline std::vector<point> normalizeCoordsByFrame(const std::vector<point>& coord
 
 inline float square(float f) { return f * f; }
 
-// Generate Graph : d -> E -> S
-// tracks were sorted in order by ending frames
+// Generate Graph, tracks were sorted in order by ending frames
 Graph generateGraph(const std::vector<track>& tracks, const std::vector<std::vector<point>>& coords, const float r) {
   
   Graph D;
@@ -45,6 +42,7 @@ Graph generateGraph(const std::vector<track>& tracks, const std::vector<std::vec
     // find the range of traj_j within overlap
     const int endingFrame_i = tracks[traj_i].endingFrame;
 
+    // binary search to find interval of track ids' within temporal overlap
     auto end_it = std::upper_bound(
       tracks.begin() + traj_i + 1, 
       tracks.end(),
@@ -58,6 +56,7 @@ Graph generateGraph(const std::vector<track>& tracks, const std::vector<std::vec
       // Ending frame indices for traj_i and traj_j
       const int endf_i = tracks[traj_i].endingFrame;
       const int endf_j = tracks[traj_j].endingFrame;
+
       const int offset = endf_j - endf_i;   // offset is 'o' in the paper   
       const int overlap = TRACK_LEN - offset;
       
@@ -70,15 +69,13 @@ Graph generateGraph(const std::vector<track>& tracks, const std::vector<std::vec
       float ds = 0.0;
       float dij = 0.0;
       for(int index_i = offset; index_i < TRACK_LEN; ++index_i) {
-        //d += spatialDistance(tracks[traj_i].displacements[index_i], tracks[traj_j].displacements[index_i - offset]);
         ds += spatialDistance(coords[traj_i][index_i], coords[traj_j][index_i - offset]);
       }
-     // std::cout << "hi" << std::endl;
+
       // Compute s_ij
       if((ds / overlap) < TAU_S) {     // equation 3 in paper
         //std::cout << "d : "<< d <<"; or: " << offset * r << "; or^2: "<< pow(offset * r, 2) << std::endl;
         dij = (ds + square(offset * r));
-        //dij = d + offset * r;
         D.emplace(std::make_pair(traj_i, traj_j), dij);
       }
     }
@@ -105,8 +102,7 @@ void printDistanceMatrix(const std::string& filename, const Graph& D, const int 
   }
 
   // Output pspec id :track id
-  // sort and print each list in neighbors
-  
+  // sort and print each list in neighbors 
   std::cout << "[BuildGraph] Opening output file : " << filename << std::endl;
   FILE* fout = fopen(filename.c_str(), "w");
 
@@ -137,7 +133,6 @@ void outputSortedTrajectories(const std::string& outputPath, const std::vector<t
   }
   
   std::ofstream ofs(outputPath + "_sortedTrajectories.out");
-  // save data to archive
   {
       boost::archive::binary_oarchive oa(ofs);
       oa << tList;    // archive and stream closed when destructors are called
@@ -151,14 +146,17 @@ int main(int argc, char** argv) {
   std::string videoName = argv[3];
 
   float r = std::stof(argv[4]);
+  const int MAX_NUM_TRACKS = std::stoi(argv[5]);
 
   videoRep video;
   restoreVideoRep(videoPath, video);
 
-  std::vector<std::pair<int, track>> dummyIDAndTracks = video.getTrackList().tracks();
   std::vector<track> tracks;
-  std::transform(dummyIDAndTracks.begin(), dummyIDAndTracks.end(), tracks.begin(), 
-    [](const std::pair<int, track> p){
+  std::transform(
+    video.getTrackList().tracks().begin(),
+    video.getTrackList().tracks().end(), 
+    std::back_inserter(tracks), 
+    [](const std::pair<int, track>& p){
       return p.second;
     });
   
@@ -166,13 +164,12 @@ int main(int argc, char** argv) {
 
   if (tracks.size() > MAX_NUM_TRACKS) {
     // Random sample some tracks 
-    std::random_shuffle(tracks.begin(), tracks.end());
-    std::vector<track> samples(tracks.begin(), tracks.begin() + MAX_NUM_TRACKS);
+    std::vector<track> samples = randomSample(tracks, MAX_NUM_TRACKS);
     tracks.clear();
     tracks = samples;
   }
 
-  std::cout << tracks.size() << "tracks" << std::endl;
+  std::cout << "Processing " << tracks.size() << "tracks" << std::endl;
 
   // Sort Tracks by ending frame for ease of graph construction
   std::sort(
@@ -192,10 +189,8 @@ int main(int argc, char** argv) {
     normalizedCoords.push_back(normalizeCoordsByFrame(t.coords, video.videoWidth(), video.videoHeight()));
   }
 
-  // (traj index i, traj index j) -> s_ij
   std::cout << "Generating graph, N2" << std::endl;
   Graph D = generateGraph(tracks, normalizedCoords, r);
-  // [[trj 0's neighbors], [trj 1's neighbors], ..., [trj N-1's]]
   
   // Output s_ij for spectral clustering
   printDistanceMatrix(outputPath + videoName + "_dij.txt", D, tracks.size());

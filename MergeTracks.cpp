@@ -60,7 +60,7 @@ track computeSuperTrackFromGroup(const std::vector<track>& tracks) {
 	}
 
 	// recalculate means, var if neccessary
-
+	checkContainsEmptyFeature(superTrack);
 	return superTrack;
 }
 
@@ -82,11 +82,11 @@ trackList computeSuperTracks(
 
 	// For each group of trajectories, compute a representation
 	for (int cid = 0; cid < groups.size(); ++cid) {
-		if (groups[cid].size()) {
+		if (groups[cid].size() > 0) {
 			superTracks.addTrack(cid, computeSuperTrackFromGroup(groups[cid]));	// cid become superTrackId			
 		}
 	}
-
+	std::cout << superTracks.size() << "non empty super tracks" << std::endl;
  	return superTracks;
 }
 
@@ -193,10 +193,10 @@ int main(int argc, char** argv) {
 	// cid becomes superTrackId
 	std::cout << "Computing super tracks" << std::endl;
 	trackList superTracks =	computeSuperTracks(numClusters, clusterId, tList);								
-
+	std::cout << "Number of supertracks " << superTracks.size() << std::endl;
 	// Returns a CxC matrix.
-	std::cout << "Computing edge weights" << std::endl;
-	Edges edgeWeights = computeEdgeWeights(primitiveGraphPath + videoName + "_dij.txt", clusterId, numClusters);
+//	std::cout << "Computing edge weights" << std::endl;
+//	Edges edgeWeights = computeEdgeWeights(primitiveGraphPath + videoName + "_dij.txt", clusterId, numClusters);
 
 	// Output to archive, print edge weights
 	
@@ -210,11 +210,11 @@ int main(int argc, char** argv) {
 	}
 
 	/* RAW DATA OUTPUTS*/
-	std::cout << "Writing edge weights" << std::endl;
-	writeEdgesToFile(clusterResultPath + "edges/" + videoName + "_edges.txt", edgeWeights);
+//	std::cout << "Writing edge weights" << std::endl;
+//	writeEdgesToFile(clusterResultPath + "edges/" + videoName + "_edges.txt", edgeWeights);
 
-	std::cout << "Writing super tracks in txt form" << std::endl;
-	writeSuperTracksToFile(clusterResultPath + "supertracks/" + videoName + "_superTracks.txt", superTracks);
+//	std::cout << "Writing super tracks in txt form" << std::endl;
+//	writeSuperTracksToFile(clusterResultPath + "supertracks/" + videoName + "_superTracks.txt", superTracks);
 
 	//std::cout << "Writing coords" << std::endl;
 	//writeCoordsToFile(clusterResultPath, superTracks);

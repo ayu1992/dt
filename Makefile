@@ -1,6 +1,6 @@
 # set the binaries that need to be built
-TARGETS := DrawClusters DrawTracks DenseTrack Video
-
+TARGETS := DenseTrack Video
+#DrawClusters DrawTracks 
 ParseTracks: ParseTracks.cpp
 	g++ ParseTracks.cpp -o ParseTracks -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -std=c++11
 

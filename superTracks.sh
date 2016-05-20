@@ -4,6 +4,7 @@ progress=0
 # This script will read from Path to archive/*.out and place its
 # outputs in $_CLUSTERED_TRACKS_PATH/r={some int value}/c={some int value}/
 
+#!/bin/bash
 # Each run on this script 
 # 1. reads the Dense Tracks of a video
 # 2. builds a graph from the tracks by treating each track as a node,
@@ -19,22 +20,22 @@ do
 		((progress++))
 
 		# Generate a graph for each r
-		for r in "${_TEMPORAL_MISALIGNMENT_r[@]}"	
+		for r in "${_TEMPORAL_MISALIGNMENT_PENALTY[@]}"	
  		do 
 			SECONDS=0
-			_GRAPH_PATH=$_CLUSTERED_TRACKS_PATH"r="$r"/"
-			mkdir -p $GRAPH_PATH								# No op if the folder already exists
+			_GRAPH_PATH=$_CLUSTERED_TRACKS_PATH"r=$r/"
+			mkdir -p $_GRAPH_PATH								# No op if the folder already exists
 
-			VIDEO_NAME="$_ARCHIVE_LOCATION/$vid.out"
+			VIDEO_ARCHIVE=$_ARCHIVE_LOCATION$CATEGORY"_$vid.out"
+
+			echo "Processing $VIDEO_ARCHIVE"
 			
-			echo "Processing "$VIDEO_NAME
-			
-			# We can experiment with different NUM_CLUSTER values on each graph
+			# We can experiment with different c values on each graph
 			for c in "${_MAX_NUM_CLUSTER[@]}"			
 			do	
 				# Output location, 
-				# each combination of (r,c) aka (r/NUMCLUSTERS) defines a unique output location
-				OUTPUT_LOCATION=$GRAPH_PATH"c="$c"/"					
+				# each combination of ($_RAW_TRACK_CAP, r, c) defines a unique output location
+				OUTPUT_LOCATION=$_GRAPH_PATH"c=$c/"					
 				mkdir -p $OUTPUT_LOCATION					
 
 				# Removing any leftovers from previous runs in case states append together, 
@@ -42,17 +43,19 @@ do
 				rm $OUTPUT_LOCATION"result.txt"
 				rm $OUTPUT_LOCATION"similarity.txt"
 
-				./BuildGraph $VIDEO_NAME $GRAPH_PATH $CATEGORY$vid $r
+				./BuildGraph $VIDEO_ARCHIVE $_GRAPH_PATH $CATEGORY$vid $r $_RAW_TRACK_CAP
 
 				echo "converting distance to similarity"
-				mpiexec -n $_NUM_DISTANCE_TO_SIMILARITY_WORKERS $_DISTANCE_TO_SIMILARITY --input $GRAPH_PATH$CATEGORY$vid"_dij.txt" --output $OUTPUT_LOCATION"similarity.txt"
+				mpiexec -n $_NUM_DISTANCE_TO_SIMILARITY_WORKERS $_DISTANCE_TO_SIMILARITY --input $_GRAPH_PATH$CATEGORY$vid"_dij.txt" --output $OUTPUT_LOCATION"similarity.txt"
 
 				echo "Running pspectral"				
 				NUM_SPACE=$(($c * 3))
 				mpiexec -n $_NUM_EVD_WORKERS $_EVD --arpack_iterations 1000 --arpack_tolerance 0.000001 --eigenvalue $c --eigenspace $NUM_SPACE --input $OUTPUT_LOCATION"similarity.txt" --eigenvalues_output $OUTPUT_LOCATION"eigenvalues.txt" --eigenvectors_output $OUTPUT_LOCATION"eigenvectors.txt"
-				mpiexec -n $_NUM_KMEANS_WORKERS $_KMEANS --c $c --input $OUTPUT_LOCATION"eigenvectors.txt" --output $OUTPUT_LOCATION"result.txt"
+				mpiexec -n $_NUM_KMEANS_WORKERS $_KMEANS --num_clusters $c --input $OUTPUT_LOCATION"eigenvectors.txt" --output $OUTPUT_LOCATION"result.txt"
 				
 				echo "Counting actual clusters"
+				# A Mapping of video name to number of non-empty clusters will be written to 
+				# $OUTPUT_LOCATION/actualNumClusters
 				./countActualClusters $OUTPUT_LOCATION $CATEGORY$vid
 				
 				# Uncomment to Visualize partition quality, the binaries will produce .avi files in $OUTPUT_LOCATION
@@ -66,7 +69,7 @@ do
 				
 				# Supertracks
 				echo "Merging trajectories"
-				./MergeTracks $GRAPH_PATH $OUTPUT_LOCATION $c $CATEGORY $vid
+				./MergeTracks $_GRAPH_PATH $OUTPUT_LOCATION $c $CATEGORY $vid
 								
 				# Uncomment here and writeCoordsToFile function in MergeTracks to Visualize super tracks
 				# echo "Drawing super tracks"
