@@ -59,7 +59,7 @@ void getTrainingSamples(
 	for (const std::string& path : archiveNames) {
 		videoRep video;
 		restoreVideoRep(archivesLocation + path, video);
-		for (const auto& id_and_track : video.largestCluster().tracks()) {
+		for (const auto& id_and_track : video.getTrackList().tracks()) {
 			reservoirSample(samples, kNumRandomSamples, j++, id_and_track.second);
 		}
 	}
@@ -152,7 +152,7 @@ std::vector<LabelAndTracks> getVideoLabelToTracks(const std::vector<std::string>
 		restoreVideoRep(pathToFiles + filename, video);
 		// Get rid of trajectory indices
 		std::vector<track> temp;
-		for (const auto& pair : video.largestCluster().tracks()) {
+		for (const auto& pair : video.getTrackList().tracks()) {
 			temp.push_back(pair.second);
 		}
 		ret.emplace_back(video.classLabel(), temp);		

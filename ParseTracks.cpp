@@ -21,9 +21,7 @@ int main(int argc, char** argv) {
 
   	std::string actionCategory = argv[4];
 
-	std::istringstream ss(argv[5]);
-	int vid;
-	ss >> vid;
+	int vid = std::stoi(argv[5]);
 
 	int actionIndex;
 	/* Obviously needs refactoring*/
