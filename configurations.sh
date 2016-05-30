@@ -34,7 +34,7 @@ _EXTRACTION="idt"
 _PATH_TO_IDT_BINARY="../improved_trajectory_release/release/DenseTrackStab"
 #_PATH_TO_DT_BINARY="./DenseTrack"
 
-# Place the archives here
+# Place the archives here, tracks are unprocessed and not sorted in any order
 _ARCHIVE_LOCATION="$_VIDEO_LOCATION/RawTracks/"
 
 ################################ Regarding superTracks.sh ########################################
@@ -62,6 +62,15 @@ _TEMPORAL_MISALIGNMENT_PENALTY=(0.05)
 _MAX_NUM_CLUSTER=(100)
 
 # Location to store the results of spectral clustered trajectories
+#
+# BuildGraph.exe will place 
+#   sorted trajectories in $_CLUSTERED_TRACKS_PATH as {video name}_sortedTrajectories.out in $_CLUSTERED_TRACKS_PATH/r=../
+#   adjacency matrix of the sorted tracks in $_CLUSTERED_TRACKS_PATH/r=../
+#
+# MergeTracks.exe will place: 
+#   supertracks (archive form) in $_CLUSTERED_TRACKS_PATH/r=../c=../archives
+#   supertracks (txt form) in $_CLUSTERED_TRACKS_PATH/r=../c=../supertracks
+#   edges between supertracks (txt form) in $_CLUSTERED_TRACKS_PATH/r=../c=../edges
 _CLUSTERED_TRACKS_PATH="$_VIDEO_LOCATION/ClusteredTrajectories/sample=$_RAW_TRACK_CAP/"
 
 ################################ Regarding looScore.sh ########################################
