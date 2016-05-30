@@ -17,6 +17,21 @@ const int HOF_DIM = 108;
 const int MBHX_DIM = 96;
 const int MBHY_DIM = 96;
 
+std::map<std::string, int> subJHMDBActionClassMap {
+  {"catch", 0},
+  {"climb_stairs", 1},
+  {"golf", 2},
+  {"jump", 3},
+  {"kick_ball", 4},
+  {"pick", 5},
+  {"pullup", 6},
+  {"push", 7},
+  {"run", 8},
+  {"shoot_ball", 9},
+  {"swing_baseball", 10},
+  {"walk", 11}
+};
+
 std::map<std::string, int> ucfActionClassMap {
   {"Diving-Side", 0},
   {"Golf-Swing-Back", 1},

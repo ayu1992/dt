@@ -17,9 +17,9 @@ using ClassToFileNames = std::map<std::string, std::vector<std::string>>;
 using LabelAndTracks = std::pair<int, std::vector<track>>;
 
 /* Reads and load a bunch of archives (from a specified location) in memory and output feature vectors */
-std::vector<std::string> getArchiveNames(const std::string archivesLocation) {
+std::vector<std::string> getArchiveNames(const std::string trainingSetLocation) {
 	std::vector<std::string> archiveNames;
-	DIR* dirp = opendir(archivesLocation.c_str());
+	DIR* dirp = opendir(trainingSetLocation.c_str());
 	dirent* dp = NULL;
 	while ((dp = readdir(dirp)) != NULL) {
 		std::string name = dp->d_name;
@@ -50,7 +50,7 @@ void reservoirSample(
 	samples[i] = t;
 }
 
-void getTrainingSamplesByReservoirSampling(
+void getSamplesByReservoirSampling(
 	std::vector<track>& samples,
 	const std::vector<std::string>& archiveNames, 
 	const std::string archivesLocation, 
@@ -67,7 +67,7 @@ void getTrainingSamplesByReservoirSampling(
 	}
 }
 
-std::vector<track> getTrainingSamplesByRandomSampling(
+std::vector<track> getSamplesByRandomSampling(
 	const std::vector<std::string>& archiveNames, 
 	const std::string archivesLocation, 
 	const int kNumRandomSamples) {
@@ -265,21 +265,25 @@ int main(int argc, char** argv) {
 	/* TODO: Refactor this to accept an archive parser/ txt reader */
 	
 	// Get all archive names in the specified folder
-	std::string archivesLocation = argv[1];		// Location of supertracks
+	std::string trainingSetLocation = argv[1];		// Location of supertracks
 	std::string outputLocation = argv[2];		//"SuperTracks/SampleCut=8000/All/
 	const int kNumRandomSamples = std::stoi(argv[3]);//100000
 	const int numCenters = std::stoi(argv[4]);		// 500
+	// TODO: make this an optional flag
+	std::string testingSetLocation = argv[5];
 
-	std::string trainingSetPath = archivesLocation;
+	std::string trainingSetPath = trainingSetLocation;
 	std::vector<std::string> trainingSetNames = getArchiveNames(trainingSetPath);
 
+	std::vector<std::string> testingSetNames = getArchiveNames(testingSetLocation);
+	
 	// Randomly sample some trajectories to build codebooks
 	// If there is huge amount of trajectories in the training data, use reservoir sampling by uncommenting the following two lines
 	// std::vector<track> samples(kNumRandomSamples);
 	// getTrainingSamplesByReservoirSampling(samples, trainingSetNames, trainingSetPath, kNumRandomSamples);
 	
 	// If there's only a few hundreds of trajectories, random sampling is recommended
-	std::vector<track> samples = getTrainingSamplesByRandomSampling(trainingSetNames, trainingSetPath, kNumRandomSamples);
+	std::vector<track> samples = getSamplesByRandomSampling(trainingSetNames, trainingSetPath, kNumRandomSamples);
 
 	std::cout << samples.size() << "samples" << std::endl;
 
@@ -301,5 +305,12 @@ int main(int argc, char** argv) {
 		outputLocation + "/s=" + std::to_string(kNumRandomSamples)+ ",nc=" + std::to_string(numCenters) + ".out",
 		numCenters);
 	
+	generateFeatures(
+		testingSetNames, 
+		testingSetLocation, 
+		codebooks, 
+		outputLocation + "/test.out",
+		numCenters);
+
 	return 0;
 }
