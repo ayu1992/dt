@@ -90,18 +90,6 @@ trackList computeSuperTracks(
  	return superTracks;
 }
 
-// Parse a string like "3:5.5" into a pair<int, float>.
-std::pair<int, float> parseIntoPair(const std::string& s) {
-	std::vector<std::string> tmp;	// tmp would have 2 elements
-	boost::split(tmp, s, boost::is_any_of(":"));
-
-	if (tmp.size() != 2) {
-		std::cout << "Failed to parse pair: " << s << std::endl;
-		return {-1, -1};
-	}
-	return {std::stoi(tmp[0]), std::stof(tmp[1])};
-}
-
 Edges computeEdgeWeights(
 	const std::string& filename,
     const std::unordered_map<int, int>& clusterId,
@@ -194,9 +182,10 @@ int main(int argc, char** argv) {
 	std::cout << "Computing super tracks" << std::endl;
 	trackList superTracks =	computeSuperTracks(numClusters, clusterId, tList);								
 	std::cout << "Number of supertracks " << superTracks.size() << std::endl;
+
 	// Returns a CxC matrix.
-//	std::cout << "Computing edge weights" << std::endl;
-//	Edges edgeWeights = computeEdgeWeights(primitiveGraphPath + videoName + "_dij.txt", clusterId, numClusters);
+	std::cout << "Computing edge weights" << std::endl;
+	Edges edgeWeights = computeEdgeWeights(primitiveGraphPath + videoName + "_dij.txt", clusterId, numClusters);
 
 	// Output to archive, print edge weights
 	
@@ -211,12 +200,12 @@ int main(int argc, char** argv) {
 
 	/* RAW DATA OUTPUTS*/
 //	std::cout << "Writing edge weights" << std::endl;
-//	writeEdgesToFile(clusterResultPath + "edges/" + videoName + "_edges.txt", edgeWeights);
+	writeEdgesToFile(clusterResultPath + "edges/" + videoName + "_edges.txt", edgeWeights);
 
 //	std::cout << "Writing super tracks in txt form" << std::endl;
 //	writeSuperTracksToFile(clusterResultPath + "supertracks/" + videoName + "_superTracks.txt", superTracks);
 
 	//std::cout << "Writing coords" << std::endl;
-	//writeCoordsToFile(clusterResultPath, superTracks);
+	writeCoordsToFile(clusterResultPath, superTracks);
 	return 0;
 }

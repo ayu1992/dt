@@ -20,7 +20,8 @@ _VIDEO_TYPE=".avi"
 declare -A CATEGORIES
 #CATEGORIES=(['Diving-Side']=14 ['Golf-Swing-Back']=5 ['Golf-Swing-Front']=8 ['Golf-Swing-Side']=5 ['Kicking-Front']=10 ['Kicking-Side']=10 ['Lifting']=6 ['Riding-Horse']=12 ['Run-Side']=13 ['SkateBoarding-Front']=12 ['Swing-Bench']=20 ['Swing-SideAngle']=13 ['Walk-Front']=22)
 #CATEGORIES=(['catch']=25 ['climb_stairs']=22 ['golf']=30 ['jump']=18 ['kick_ball']=16 ['pick']=19 ['pullup']=17 ['push']=18 ['run']=17 ['shoot_ball']=14 ['swing_baseball']=16 ['walk']=15)
-CATEGORIES=(['catch']=5 ['climb_stairs']=1 ['golf']=12 ['jump']=8 ['kick_ball']=8 ['pick']=8 ['pullup']=13 ['push']=10 ['run']=7 ['shoot_ball']=6 ['swing_baseball']=7 ['walk']=4)
+CATEGORIES=(['catch']=1)
+#CATEGORIES=(['catch']=5 ['climb_stairs']=1 ['golf']=12 ['jump']=8 ['kick_ball']=8 ['pick']=8 ['pullup']=13 ['push']=10 ['run']=7 ['shoot_ball']=6 ['swing_baseball']=7 ['walk']=4)
 ################################ Strategy-related configurations ################################
 
 ################################ Regarding getVideos.sh #########################################

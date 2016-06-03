@@ -3,12 +3,12 @@
 
 #make clean
 make all 
-#rm BuildGraph
-#rm MergeTracks
-#rm DrawTracks
-#rm GetCoordsForClusters
-#rm DrawClusters
-#rm countActualClusters
+rm BuildGraph
+rm MergeTracks
+rm DrawTracks
+rm GetCoordsForClusters
+rm DrawClusters
+rm countActualClusters
 make ParseTracks
 make BagOfWords
 make BuildGraph

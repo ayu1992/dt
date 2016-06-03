@@ -8,9 +8,10 @@ using namespace boost::numeric::ublas;
 // later: plot subsets in different color
 // later: make this an interface, implements random walk strategy
 const float epsilon = 0.000001;
+float MAX = std::numeric_limits<float>::max();
 
 // 	Define a uniform dist. of S values
-std::vector<float> thresholds = {0.04, 0.035, 0.03, 0.025, 0.02};
+std::vector<float> thresholds = {0.001, 0.002, 0.005, 0.02, 0.03};
 
 matrix<float> readEdges(const std::string& edgesFile, const int N) {
 	
@@ -49,6 +50,37 @@ matrix<float> getWeightedDegrees(const matrix<float>& A) {
 	return D;
 }
 
+inline float gaussianKernel(const float distance, const float sigma) {
+	return (distance == 0.0) ? MAX : std::exp(- std::pow(distance, 2) / std::pow(sigma, 2));
+}
+
+matrix<float> distanceToSimilarity(const matrix<float>& A_dis) {
+	matrix<float> A_sim = zero_matrix<float>(A_dis.size1(), A_dis.size2());
+	float mean = 0.0;
+	for (int i = 0; i < A_dis.size1(); ++i) {
+		for (int j = 0; j < A_dis.size2(); ++j) {
+			mean += A_dis(i,j);
+		}
+	}
+	
+	mean /= (A_dis.size1() * A_dis.size2());
+	float max = 0.0;
+	for (int i =0; i < A_sim.size1(); ++i) {
+		for (int j = 0; j < A_sim.size2(); ++j) {
+			float gaussianDistance = gaussianKernel(A_dis(i, j), mean);
+			max = (gaussianDistance > max) ? gaussianDistance : max;
+			A_sim(i, j) =  gaussianDistance;
+		}
+	}
+
+	for (int i =0; i < A_sim.size1(); ++i) {
+		for (int j = 0; j < A_sim.size2(); ++j) {
+			A_sim(i, j) = max - A_sim(i, j);
+		}
+	}
+
+	return A_sim;
+}
 /**
  * Format: 
  * Threshold\n
@@ -69,12 +101,12 @@ void writeSubsetsToOutput(
 }
 
 void printWeightedDegrees(const matrix<float>& Dinv) {
-	std::map<float, int> highestWeightedDegrees;
+	std::multimap<float, int> highestWeightedDegrees;
 	for (int i = 0; i < Dinv.size1(); ++i) {
 		highestWeightedDegrees.emplace(Dinv(i,i), i);
 	}
 
-	std::cout << "Print indices in order of highest weigthed degrees" << std::endl;
+	std::cout << "Print indices in order of highest weigted degrees" << std::endl;
 	for (const auto& keyValPair : highestWeightedDegrees) {
 		std::cout << keyValPair.second << " ";
 	}
@@ -106,39 +138,54 @@ int main(int argc, char** argv) {
 	const std::string supertrackFile = argv[1]; //home/hydralisk/Documents/dt/sJHMDB/Training/ClusteredTrajectories/sample=10000/r=0.05/c=100/archive/catch_1.out
 	const std::string edgesFile = argv[2];	///home/hydralisk/Documents/dt/sJHMDB/Training/ClusteredTrajectories/sample=10000/r=0.05/c=100/edges/		
 
-	trackList tList;
+	/* For raw tracks and dij */
+	/*trackList tList;
 	restoreTrackList(supertrackFile, tList);
-
 	std::vector<std::pair<int, track>> tracks = tList.tracks();
 	int N = tracks.size();
 
 	std::cout << N <<  "tracks" << std::endl;
 
 	std::cout << "Read adjacency matrix A" << std::endl;
-	matrix<float> A = parseDij(edgesFile, N);
+	matrix<float> A_dis = parseDij(edgesFile, N);
+*/
+	
+/*
+	videoRep video;
+	restoreVideoRep(supertrackFile, video);
 
-	std::cout << A.size1() << "rows and " << A.size2() << " columns" << std::endl;
+	std::vector<std::pair<int, track>> tracks = video.getTrackList().tracks();
+	int N = tracks.size();
+
+	std::cout << N <<  "tracks" << std::endl;
+*/
+	std::cout << "Read adjacency matrix A" << std::endl;
+	matrix<float> A_dis = readEdges(edgesFile, N);
+
+	std::cout << A_dis.size1() << "rows and " << A_dis.size2() << " columns" << std::endl;
 
 	// Symmetric check
-	if (A.size1() != A.size2()) 	return -1;
+	if (A_dis.size1() != A_dis.size2()) 	return -1;
 	
 	// Remove self edges
-	for (int i = 0; i < A.size1(); ++i) {
-		A(i,i) = 0.0;
+	for (int i = 0; i < A_dis.size1(); ++i) {
+		A_dis(i,i) = 0.0;
 	}
+
+	matrix<float> A = distanceToSimilarity(A_dis);
 
 	std::cout << "Calculate degrees D" << std::endl;
 	matrix<float> D = getWeightedDegrees(A);
 
 	std::cout << "Calculate D inverse" << std::endl;
 	matrix<float> Dinv = zero_matrix<float>(N, N);
-	InvertMatrix<float>(D, Dinv);
+	InvertDiagonalMatrix<float>(D, Dinv);
 
 	printWeightedDegrees(Dinv);
 
 	std::cout << "Calculate transitional probability matrix W" << std::endl;
 	matrix<float> W = prod(A, Dinv);
-	//printMatrix(W);
+
 	//  Loop till W^t+1 - W^t < epsilon
 	int iter = 0;
 	matrix<float> W_this(W);
@@ -151,27 +198,76 @@ int main(int argc, char** argv) {
 		++iter;
 	}
 	
-	W = W_next;
+	W = trans(W_next);	// rows sum to 1
+	std::ofstream fout;
+	fout.open ("test/W.txt", std::fstream::in | std::fstream::out | std::fstream::app);
+	printMatrix(W, fout);
+
+	float sum = 0.0;
+/*
+	for (int rowIdx = 0; rowIdx < W.size1(); ++rowIdx) {
+		sum = 0.0;
+		for (int colIdx = 0; colIdx < W.size2(); ++colIdx) {
+			sum += W(rowIdx, colIdx);
+		}
+		std::cout << "row sum : " << sum << std::endl;
+	}
+*/
+	// Each vector element is {(p1, n1), (p2, n2) ... }
+	std::vector<std::multimap<float, int>> accProbsfromEachNode;
+	std::multimap<float, int> distribution;
+	std::multimap<float, int> accumulated;
+	for (int rowIdx = 0; rowIdx < W.size1(); ++rowIdx) {
+		// Construct the distribution for a node (as origin of a walk)
+		distribution.clear();
+		accumulated.clear();
+		for (int colIdx = 0; colIdx < W.size2(); ++colIdx) {
+			// distribution keeps (prob, node id) pairs
+			// keys in std::map maintains sorted
+			distribution.emplace(W(rowIdx, colIdx), colIdx);
+		}
+
+		// Accumulative probability
+		float acc = 0.0;
+		for (auto dist_it = distribution.begin(); dist_it != distribution.end(); ++dist_it){	
+			acc += dist_it->first;
+			accumulated.emplace(acc, dist_it->second);
+		}
+		accProbsfromEachNode.emplace_back(accumulated);
+	}
+
+	std::ofstream fcc;
+	fcc.open ("test/acc.txt", std::fstream::in | std::fstream::out | std::fstream::app);
+	for (int i = 0; i < accProbsfromEachNode.size(); ++i) {
+		fcc << i << std::endl;
+		for (const auto & keyValPair : accProbsfromEachNode[i]) {
+			fcc << keyValPair.first << "," << keyValPair.second << " ";
+		}
+		fcc << std::endl;
+	}
 
 	std::vector<int> aSubset;
 	std::set<std::vector<int>> subsets;
 
 	//  generate subsets under different thresholds
 	std::unordered_map<float, std::set<std::vector<int>>> thresholdToSubsets;
+
 	for (const auto& threshold : thresholds) {
 		std::cout << "threshold: " << threshold << std::endl;
 		subsets.clear();
-		for (int col = 0; col < W.size1(); ++col) {
+		for (int startNode = 0; startNode < accProbsfromEachNode.size(); ++startNode){
 			aSubset.clear();
-			// Linear search for all indices above threshold probability
-			for (int row = 0; row < W.size2(); ++row) {
-				// self will be included in the set and set will be sorted automatically
-				if (W(row, col) >= threshold || col == row)	aSubset.push_back(row);
+			for (const auto& keyValPair : accProbsfromEachNode[startNode]) {
+				if (keyValPair.first > threshold) {
+					break;
+				}
+				aSubset.push_back(keyValPair.second);
 			}
-			if(aSubset.size() > 1) {
-				subsets.emplace(aSubset);
-				//printVector(aSubset);
+			if (!aSubset.empty()) {
+				aSubset.push_back(startNode);
+				subsets.emplace(aSubset);				
 			}
+
 		}
 		thresholdToSubsets.emplace(threshold, subsets);
 	}

@@ -23,14 +23,19 @@ int main(int argc, char** argv) {
 
 	int vid = std::stoi(argv[5]);
 
-	int actionIndex;
+	int actionIndex = -1;
 	/* Obviously needs refactoring*/
 	if (dataset.compare("OlympicSports") == 0) {
-			actionIndex = OlympicActionClassMap[actionCategory];
+		actionIndex = OlympicActionClassMap[actionCategory];
+	} else if (dataset.compare("UCFSports") == 0){
+		actionIndex = ucfActionClassMap[actionCategory];
+	} else if (dataset.compare("sJHMDB") == 0) {
+		actionIndex = subJHMDBActionClassMap[actionCategory];
 	} else {
-			actionIndex = ucfActionClassMap[actionCategory];
-	}	
-	if (std::isnan(actionIndex) || std::isnan(videoWidth) || std::isnan(vid)) {
+		std::cout << "[ParseTracks] Error, unable to find mapping for dataset " << dataset << std::endl;
+	}
+
+	if (actionIndex == -1 || std::isnan(actionIndex) || std::isnan(videoWidth) || std::isnan(vid)) {
 		std::cout << "fuck" << std::endl;
 		std::cout << actionIndex << std::endl;
 	}

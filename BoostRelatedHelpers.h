@@ -1,3 +1,4 @@
+/* Rename this file to BoostArchiveHelpers*/
 #include "ParserHelpers.h"
 #include <boost/archive/tmpdir.hpp>
 #include <boost/archive/binary_oarchive.hpp>
@@ -7,6 +8,7 @@
 #include <boost/serialization/utility.hpp>
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/assume_abstract.hpp>
+#include <boost/algorithm/string.hpp>
 
 /* TODO: functional and file documentation */
 struct point {
@@ -347,4 +349,16 @@ void checkContainNaN(const std::vector<track>& tracks) {
     }
     if (isDirty) std::cout << "===========================Dirty data============================" << std::endl;
   }
+}
+
+// Parse a string like "3:5.5" into a pair<int, float>.
+std::pair<int, float> parseIntoPair(const std::string& s) {
+  std::vector<std::string> tmp; // tmp would have 2 elements
+  boost::split(tmp, s, boost::is_any_of(":"));
+
+  if (tmp.size() != 2) {
+    std::cout << "Failed to parse pair: " << s << std::endl;
+    return {-1, -1};
+  }
+  return {std::stoi(tmp[0]), std::stof(tmp[1])};
 }
