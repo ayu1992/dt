@@ -58,7 +58,6 @@ track computeSuperTrackFromGroup(const std::vector<track>& tracks) {
 		take_average_for_feature(superTrack.mbhx);
 		take_average_for_feature(superTrack.mbhy);
 	}
-
 	// recalculate means, var if neccessary
 	checkContainsEmptyFeature(superTrack);
 	return superTrack;
@@ -90,28 +89,78 @@ trackList computeSuperTracks(
  	return superTracks;
 }
 
-Edges computeEdgeWeights(
-	const std::string& filename,
-    const std::unordered_map<int, int>& clusterId,
-    int C) {
-
-	Edges ret(C, std::vector<float>(C, 0));
-	
+Edges readDij(const std::string& filename, const int numPrimitiveTracks, float& dijSum) {
+	Edges dij(numPrimitiveTracks, std::vector<float>(numPrimitiveTracks, -1));	// -1 to replace inf
 	std::vector<std::string> lines;
 	readFileIntoStrings(filename, lines);
 	std::string::size_type sz;
-	const size_t num_lines = lines.size();
 	
-	for (size_t i = 0; i < num_lines; ++i) {
+	for (size_t i = 0; i < lines.size(); ++i) {
 		std::vector<std::string> strs;
 		boost::split(strs, lines[i], boost::is_any_of(" "));
 		for (const auto& str : strs) {
 			std::pair<int, float> id_and_distance = parseIntoPair(str);
+			dijSum += id_and_distance.second;
+			dij[i][id_and_distance.first] = id_and_distance.second;
+			dij[id_and_distance.first][i] = id_and_distance.second;
+		}
+	}	
+	return dij;
+}
+
+Edges distanceToSimilarityViaGaussianKernel(const Edges& dij, const float dijSum) {
+	Edges sij(dij.size(), std::vector<float>(dij.size(), 0));
+
+	float sigma = dijSum / (dij.size() * dij.size());
+	// construct sij
+	for (int i = 0; i < dij.size(); ++i) {
+		for (int j = 0; j < dij.size(); ++j) {
+			if (dij[i][j] > 0)
+				sij[i][j] = std::exp(-dij[i][j] * dij[i][j] / sigma / sigma); 
+			if (sij[i][j] >= 1) std::cout << "ERROR!!!" << std::endl;
+		} 
+	}
+	return sij;
+}
+
+Edges computeEdgeWeights(
+	const std::string& filename,
+	const int numPrimitiveTracks, 
+    const std::unordered_map<int, int>& clusterId,
+    int C) {
+	
+	float dijSum = 0.0;
+	Edges dij = readDij(filename, numPrimitiveTracks, dijSum);
+	// some check
+	Edges sij = distanceToSimilarityViaGaussianKernel(dij, dijSum);
+
+	Edges numPrimitiveEdges(C, std::vector<float>(C, 0));
+
+	// Edges of supertracks
+	Edges ret(C, std::vector<float>(C, 0));
+	for (int i = 0; i < sij.size(); ++i) {
+		for (int j = 0; j < sij.size(); ++j) {
 			int ci = clusterId.find(i)->second;
-			int cj = clusterId.find(id_and_distance.first)->second;
-			//if (ci == cj) continue;
-			ret[ci][cj] += id_and_distance.second;
-			if (ci != cj) ret[cj][ci] += id_and_distance.second;
+			int cj = clusterId.find(j)->second;
+			if (sij[i][i] > 0) {
+				numPrimitiveEdges[ci][cj] += 1;
+				ret[ci][cj] += sij[i][j];
+				if (ci != cj) {
+					ret[cj][ci] += sij[i][j];
+					numPrimitiveEdges[cj][ci] += 1;
+				}
+			}
+		}
+	}
+
+	for (int i = 0; i < C; ++i) {
+		for (int j = 0; j < C; ++j) {
+			if (numPrimitiveEdges[i][j] > 0)
+				// TODO: nit. maybe put this in the previous line.
+				ret[i][j] /= numPrimitiveEdges[i][j];
+			if (ret[i][j] > 1) {
+				std::cout << "Warning, out of range" << std::endl;
+			}
 		}
 	}
 	return ret;
@@ -148,11 +197,11 @@ void writeSuperTracksToFile(const std::string& path, const trackList& superTrack
 		// Print trackId/cid
 		fout << id_track.first << " ";
 		// Print features
-		fout << "displacements: " << printFeature<DisplacementsGetter>(id_track.second);
-		fout << "hog: " << printFeature<HogGetter>(id_track.second);
-		fout << "hof: " << printFeature<HofGetter>(id_track.second);
-		fout << "mbhx: " << printFeature<MbhXGetter>(id_track.second);
-		fout << "mbhy: " << printFeature<MbhYGetter>(id_track.second);
+		fout << printFeature<DisplacementsGetter>(id_track.second) << " ";
+		fout << printFeature<HogGetter>(id_track.second) << " ";
+		fout << printFeature<HofGetter>(id_track.second) << " ";
+		fout << printFeature<MbhXGetter>(id_track.second) << " ";
+		fout << printFeature<MbhYGetter>(id_track.second) << " ";
 		fout << std::endl;
 	}
 
@@ -176,7 +225,7 @@ int main(int argc, char** argv) {
 	const std::string videoName = videoCategory + vid;
 	trackList tList;
 	restoreTrackList(primitiveGraphPath + videoName + "_sortedTrajectories.out", tList);	
-	std::cout << "tracks are restored" << std::endl;
+	std::cout << tList.tracks().size() << " tracks are restored" << std::endl;
 	// Merge trajectories in the same cluster, computes a representative "supertrack" for each cluster	
 	// cid becomes superTrackId
 	std::cout << "Computing super tracks" << std::endl;
@@ -185,7 +234,7 @@ int main(int argc, char** argv) {
 
 	// Returns a CxC matrix.
 	std::cout << "Computing edge weights" << std::endl;
-	Edges edgeWeights = computeEdgeWeights(primitiveGraphPath + videoName + "_dij.txt", clusterId, numClusters);
+	Edges edgeWeights = computeEdgeWeights(primitiveGraphPath + videoName + "_dij.txt", tList.tracks().size(), clusterId, numClusters);
 
 	// Output to archive, print edge weights
 	
@@ -199,13 +248,13 @@ int main(int argc, char** argv) {
 	}
 
 	/* RAW DATA OUTPUTS*/
-//	std::cout << "Writing edge weights" << std::endl;
+	std::cout << "Writing edge weights" << std::endl;
 	writeEdgesToFile(clusterResultPath + "edges/" + videoName + "_edges.txt", edgeWeights);
 
-//	std::cout << "Writing super tracks in txt form" << std::endl;
-//	writeSuperTracksToFile(clusterResultPath + "supertracks/" + videoName + "_superTracks.txt", superTracks);
+	std::cout << "Writing super tracks in txt form" << std::endl;
+	writeSuperTracksToFile(clusterResultPath + "supertracks/" + videoName + "_superTracks.txt", superTracks);
 
-	//std::cout << "Writing coords" << std::endl;
+	std::cout << "Writing coords" << std::endl;
 	writeCoordsToFile(clusterResultPath, superTracks);
 	return 0;
 }

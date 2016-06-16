@@ -6,21 +6,22 @@
 # For each dataset
 # 1. define your 'label to integer' mapping in ParserHelpers.h line 20 and 
 # 2. add a case to ParseTracks.cpp around line 30
-_DATASET="sJHMDB"	
+_DATASET="UCFSports"	
 
 # Path to the videos, depending on how you organize them
-_VIDEO_LOCATION="$_DATASET/Training/"	
+_VIDEO_LOCATION="$_DATASET/original/"	
 
 # Total number of videos in this dataset, over all classes
-_NUM_VIDEOS=89
+_NUM_VIDEOS=150
 
 _VIDEO_TYPE=".avi"
 
 # Categories and number of videos under each category in the dataset
 declare -A CATEGORIES
-#CATEGORIES=(['Diving-Side']=14 ['Golf-Swing-Back']=5 ['Golf-Swing-Front']=8 ['Golf-Swing-Side']=5 ['Kicking-Front']=10 ['Kicking-Side']=10 ['Lifting']=6 ['Riding-Horse']=12 ['Run-Side']=13 ['SkateBoarding-Front']=12 ['Swing-Bench']=20 ['Swing-SideAngle']=13 ['Walk-Front']=22)
+#CATEGORIES=(['Diving-Side']=1)
+CATEGORIES=(['Diving-Side']=14 ['Golf-Swing-Back']=5 ['Golf-Swing-Front']=8 ['Golf-Swing-Side']=5 ['Kicking-Front']=10 ['Kicking-Side']=10 ['Lifting']=6 ['Riding-Horse']=12 ['Run-Side']=13 ['SkateBoarding-Front']=12 ['Swing-Bench']=20 ['Swing-SideAngle']=13 ['Walk-Front']=22)
 #CATEGORIES=(['catch']=25 ['climb_stairs']=22 ['golf']=30 ['jump']=18 ['kick_ball']=16 ['pick']=19 ['pullup']=17 ['push']=18 ['run']=17 ['shoot_ball']=14 ['swing_baseball']=16 ['walk']=15)
-CATEGORIES=(['catch']=1)
+#CATEGORIES=(['catch']=1)
 #CATEGORIES=(['catch']=5 ['climb_stairs']=1 ['golf']=12 ['jump']=8 ['kick_ball']=8 ['pick']=8 ['pullup']=13 ['push']=10 ['run']=7 ['shoot_ball']=6 ['swing_baseball']=7 ['walk']=4)
 ################################ Strategy-related configurations ################################
 
@@ -53,14 +54,14 @@ _NUM_KMEANS_WORKERS=4
 
 # Max number of trajectories each video can own. If the original number of trajectories exceed
 # this amount, we will random sample $_RAW_TRACK_CAP tracks and discard the rest
-_RAW_TRACK_CAP=10000
+_RAW_TRACK_CAP=6000
 
 # Values need to be seperated by spaces
 _TEMPORAL_MISALIGNMENT_PENALTY=(0.05)
 
 # Maximum number of clusters pspectralclustering can make, the number of non-empty clusters after 
 # pspectralclustering tend to be much lower than this amount
-_MAX_NUM_CLUSTER=(100)
+_MAX_NUM_CLUSTER=(500)
 
 # Location to store the results of spectral clustered trajectories
 #
@@ -84,11 +85,11 @@ _CHANNEL=All
 
 # Sample $_CODEBOOK_SAMPLE trajectories from Training Set to build codebooks
 # In the Dense Track literature, this is set to 100,000
-_CODEBOOK_SAMPLE=200
+_CODEBOOK_SAMPLE=6000
 
 # Dimension of each codebook
 # In the Dense Track literature, this is set to 4,000
-_CODEBOOK_CENTERS=50
+_CODEBOOK_CENTERS=500
 
 # Location to store super tracks and related files (supertracks in .txt and archive form, edges files, actualNumClusters)
 _SUPERTRACKS_PATH="SuperTracks/sampleCut=$_RAW_TRACK_CAP/$_CHANNEL/"

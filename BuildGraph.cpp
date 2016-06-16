@@ -7,7 +7,7 @@
 
 #include "BoostRelatedHelpers.h"
 /* TODO: functional and file documentation */
-
+// This file outputs a symmetric matrix (_dij.txt)
 /* Read *.out, output sortedTrajectories */
 const float TAU_S = 16.0;
 const int TAU_T = 8;

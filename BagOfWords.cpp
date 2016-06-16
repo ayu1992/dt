@@ -270,12 +270,12 @@ int main(int argc, char** argv) {
 	const int kNumRandomSamples = std::stoi(argv[3]);//100000
 	const int numCenters = std::stoi(argv[4]);		// 500
 	// TODO: make this an optional flag
-	std::string testingSetLocation = argv[5];
+	//std::string testingSetLocation = argv[5];
 
 	std::string trainingSetPath = trainingSetLocation;
 	std::vector<std::string> trainingSetNames = getArchiveNames(trainingSetPath);
 
-	std::vector<std::string> testingSetNames = getArchiveNames(testingSetLocation);
+	//std::vector<std::string> testingSetNames = getArchiveNames(testingSetLocation);
 	
 	// Randomly sample some trajectories to build codebooks
 	// If there is huge amount of trajectories in the training data, use reservoir sampling by uncommenting the following two lines
@@ -304,13 +304,13 @@ int main(int argc, char** argv) {
 		codebooks, 
 		outputLocation + "/s=" + std::to_string(kNumRandomSamples)+ ",nc=" + std::to_string(numCenters) + ".out",
 		numCenters);
-	
+	/*
 	generateFeatures(
 		testingSetNames, 
 		testingSetLocation, 
 		codebooks, 
 		outputLocation + "/test.out",
 		numCenters);
-
+	*/
 	return 0;
 }

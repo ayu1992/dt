@@ -277,7 +277,7 @@ void parseFeaturesToTracks(
     std::vector<float>::iterator hogIteratorBegin = val.begin() + TRACK_INFO_LEN + 2 * TRACK_LEN;
     std::vector<float> hog(hogIteratorBegin, hogIteratorBegin + HOG_DIM);
     std::vector<float>::iterator hofIteratorBegin = hogIteratorBegin + HOG_DIM;
-    std::vector<float> hof(hogIteratorBegin, hogIteratorBegin + HOG_DIM);
+    std::vector<float> hof(hofIteratorBegin, hofIteratorBegin + HOF_DIM);
 
     std::vector<float>::iterator mbhxIteratorBegin = hofIteratorBegin + HOF_DIM;
     std::vector<float> mbhx(mbhxIteratorBegin, mbhxIteratorBegin + MBHX_DIM);
