@@ -116,8 +116,7 @@ Edges distanceToSimilarityViaGaussianKernel(const Edges& dij, const float dijSum
 	for (int i = 0; i < dij.size(); ++i) {
 		for (int j = 0; j < dij.size(); ++j) {
 			if (dij[i][j] > 0)
-				sij[i][j] = std::exp(-dij[i][j] * dij[i][j] / sigma / sigma); 
-			if (sij[i][j] >= 1) std::cout << "ERROR!!!" << std::endl;
+				sij[i][j] = std::exp(-dij[i][j] * dij[i][j] / sigma / sigma / 2); 
 		} 
 	}
 	return sij;
@@ -127,42 +126,30 @@ Edges computeEdgeWeights(
 	const std::string& filename,
 	const int numPrimitiveTracks, 
     const std::unordered_map<int, int>& clusterId,
-    int C) {
+    const int numClusters) {
 	
 	float dijSum = 0.0;
 	Edges dij = readDij(filename, numPrimitiveTracks, dijSum);
 	// some check
 	Edges sij = distanceToSimilarityViaGaussianKernel(dij, dijSum);
 
-	Edges numPrimitiveEdges(C, std::vector<float>(C, 0));
-
 	// Edges of supertracks
-	Edges ret(C, std::vector<float>(C, 0));
+	Edges ret(numClusters, std::vector<float>(numClusters, 0));
+
 	for (int i = 0; i < sij.size(); ++i) {
 		for (int j = 0; j < sij.size(); ++j) {
 			int ci = clusterId.find(i)->second;
 			int cj = clusterId.find(j)->second;
-			if (sij[i][i] > 0) {
-				numPrimitiveEdges[ci][cj] += 1;
+			// Self edges are allowed
+			if (sij[i][j] > 0) {
 				ret[ci][cj] += sij[i][j];
 				if (ci != cj) {
 					ret[cj][ci] += sij[i][j];
-					numPrimitiveEdges[cj][ci] += 1;
 				}
 			}
 		}
 	}
 
-	for (int i = 0; i < C; ++i) {
-		for (int j = 0; j < C; ++j) {
-			if (numPrimitiveEdges[i][j] > 0)
-				// TODO: nit. maybe put this in the previous line.
-				ret[i][j] /= numPrimitiveEdges[i][j];
-			if (ret[i][j] > 1) {
-				std::cout << "Warning, out of range" << std::endl;
-			}
-		}
-	}
 	return ret;
 }
 
@@ -234,7 +221,7 @@ int main(int argc, char** argv) {
 
 	// Returns a CxC matrix.
 	std::cout << "Computing edge weights" << std::endl;
-	Edges edgeWeights = computeEdgeWeights(primitiveGraphPath + videoName + "_dij.txt", tList.tracks().size(), clusterId, numClusters);
+	Edges edgeWeights = computeEdgeWeights(primitiveGraphPath + videoName + "_dij.txt", tList.tracks().size(), clusterId, superTracks.size());
 
 	// Output to archive, print edge weights
 	

@@ -54,7 +54,7 @@ _NUM_KMEANS_WORKERS=4
 
 # Max number of trajectories each video can own. If the original number of trajectories exceed
 # this amount, we will random sample $_RAW_TRACK_CAP tracks and discard the rest
-_RAW_TRACK_CAP=6000
+_RAW_TRACK_CAP=1000
 
 # Values need to be seperated by spaces
 _TEMPORAL_MISALIGNMENT_PENALTY=(0.05)
@@ -89,7 +89,7 @@ _CODEBOOK_SAMPLE=6000
 
 # Dimension of each codebook
 # In the Dense Track literature, this is set to 4,000
-_CODEBOOK_CENTERS=500
+_CODEBOOK_CENTERS=300
 
 # Location to store super tracks and related files (supertracks in .txt and archive form, edges files, actualNumClusters)
 _SUPERTRACKS_PATH="SuperTracks/sampleCut=$_RAW_TRACK_CAP/$_CHANNEL/"

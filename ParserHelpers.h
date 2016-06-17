@@ -113,23 +113,34 @@ int countNonEmptyClusters(const std::string path) {
 
 // clusterId : trajId -> cid
 std::unordered_map<int, int> readClusterId(const std::string path) {
+  int numActualClusters = countNonEmptyClusters(path);
+
   std::ifstream fin((path + "result.txt").c_str());
   if (!fin) {
     std::cerr << "Thrown by readClusterId, Unable to open file : " << std::endl;
   }
 
-  std::unordered_map<int, int> clusterId;
-  int cid, trajIndex = 0;
+  std::unordered_map<int, int> tidToCid;
+  std::unordered_map<int, int> resultIdToCid;  // Cid will contain exactly numActualClusters ids'.
+
+  int resultId, trajIndex = 0;
   std::string line;
+  int lastCid = 0;
+
   while (std::getline(fin, line)) {
     std::istringstream iss(line);
-    iss >> cid;
-    clusterId.insert({trajIndex, cid});
+    iss >> resultId;  // resultId might be outside of range [0...numActualClusters]
+    auto it = resultIdToCid.find(resultId); // try to find a previously defined cid
+    if (it == resultIdToCid.end()) {
+      resultIdToCid.insert({resultId, lastCid++});
+    }
+
+    tidToCid.insert({trajIndex, resultIdToCid.find(resultId)->second});
     trajIndex++;
   }
   
   fin.close();
-  return clusterId;
+  return tidToCid;
 }
 
 int returnIdOfLargestCluster(const std::string& idFilename, std::unordered_map<int, int>& clusterId) {
@@ -139,7 +150,6 @@ int returnIdOfLargestCluster(const std::string& idFilename, std::unordered_map<i
   std::map<int, int> clusterSizes;
   // Identify the biggest cluster (cid)   
   for (const auto& trjIdCidPair: clusterId) {
-    //clusterSizes[pair.second] += 1;
     clusterSizes[trjIdCidPair.second]++;
   }
 
