@@ -1,20 +1,24 @@
 # set the binaries that need to be built
 TARGETS := DenseTrack Video
 #DrawClusters DrawTracks 
+
 ParseTracks: ParseTracks.cpp
 	g++ ParseTracks.cpp -o ParseTracks -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -std=c++11
+
+symmetricCheck: symmetricCheck.cpp
+	g++ symmetricCheck.cpp -o symmetricCheck -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -std=c++11
+
+LargestClusterExtraction: LargestClusterExtraction.cpp
+	g++ LargestClusterExtraction.cpp -o LargestClusterExtraction -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -std=c++11
 
 BuildGraph: BuildGraph.cpp
 	g++ BuildGraph.cpp -o BuildGraph -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -std=c++11
 
-countActualClusters: countActualClusters.cpp
-	g++ countActualClusters.cpp -o countActualClusters -std=c++11
-
 GetCoordsForClusters: GetCoordsForClusters.cpp
 	g++ GetCoordsForClusters.cpp -o GetCoordsForClusters -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -std=c++11
 
-LocalizationScoreForVideo: LocalizationScoreForVideo.cpp
-	g++ LocalizationScoreForVideo.cpp -o LocalizationScoreForVideo -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -std=c++11	
+GenerateSubsets: GenerateSubsets.cpp
+	g++ GenerateSubsets.cpp -o GenerateSubsets -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -std=c++11	
 
 MergeTracks: MergeTracks.cpp
 	g++ MergeTracks.cpp -o MergeTracks -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -I /home/hydralisk/Documents/vlfeat -L /home/hydralisk/Documents/vlfeat/bin/glnxa64/ -lvl -std=c++11
@@ -24,6 +28,9 @@ BagOfWords: BagOfWords.cpp
 
 ChiSquaredSVM: ChiSquaredSVM.cpp
 	g++ ChiSquaredSVM.cpp -o ChiSquaredSVM -I /home/hydralisk/Documents/boost_1_60_0 /usr/local/lib/libboost_serialization.a -I /home/hydralisk/Documents/vlfeat -L /home/hydralisk/Documents/vlfeat/bin/glnxa64/ -lvl -std=c++11
+
+countActualClusters: countActualClusters.cpp
+	g++ countActualClusters.cpp -o countActualClusters -std=c++11
 
 # set the build configuration set 
 BUILD := release

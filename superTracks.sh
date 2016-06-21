@@ -66,11 +66,16 @@ do
 				mkdir -p $OUTPUT_LOCATION"edges/"
 				mkdir -p $OUTPUT_LOCATION"supertracks/"		# Here we store supertracks in txt form
 				mkdir -p $OUTPUT_LOCATION"archive/"			# Here we store supertracks in archive form
-				
+				mkdir -p $OUTPUT_LOCATION"largestCluster/"
+
 				# Supertracks
-				echo "Merging trajectories"
-				./MergeTracks $_GRAPH_PATH $OUTPUT_LOCATION $c $CATEGORY $vid
-								
+				# echo "Merging trajectories"
+				# ./MergeTracks $_GRAPH_PATH $OUTPUT_LOCATION $c $CATEGORY $vid
+				
+				# Largest Cluster Extraction (Chen & Corso)
+				echo "Extracting largest clusters as video representations"
+				./LargestClusterExtraction $_GRAPH_PATH $OUTPUT_LOCATION $c $CATEGORY $vid
+
 				# Uncomment here and writeCoordsToFile function in MergeTracks to Visualize super tracks
 				# echo "Drawing super tracks"
 				#./DrawTracks $OUTPUT_LOCATION $_VIDEO_LOCATION $CATEGORY $vid

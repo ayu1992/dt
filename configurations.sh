@@ -14,7 +14,7 @@ _VIDEO_LOCATION="$_DATASET/original/"
 # Total number of videos in this dataset, over all classes
 _NUM_VIDEOS=150
 
-_VIDEO_TYPE=".avi"
+_VIDEO_TYPE=".vob"
 
 # Categories and number of videos under each category in the dataset
 declare -A CATEGORIES
@@ -54,10 +54,10 @@ _NUM_KMEANS_WORKERS=4
 
 # Max number of trajectories each video can own. If the original number of trajectories exceed
 # this amount, we will random sample $_RAW_TRACK_CAP tracks and discard the rest
-_RAW_TRACK_CAP=1000
+_RAW_TRACK_CAP=6000
 
 # Values need to be seperated by spaces
-_TEMPORAL_MISALIGNMENT_PENALTY=(0.05)
+_TEMPORAL_MISALIGNMENT_PENALTY=(0.07)
 
 # Maximum number of clusters pspectralclustering can make, the number of non-empty clusters after 
 # pspectralclustering tend to be much lower than this amount
@@ -85,7 +85,7 @@ _CHANNEL=All
 
 # Sample $_CODEBOOK_SAMPLE trajectories from Training Set to build codebooks
 # In the Dense Track literature, this is set to 100,000
-_CODEBOOK_SAMPLE=6000
+_CODEBOOK_SAMPLE=10000
 
 # Dimension of each codebook
 # In the Dense Track literature, this is set to 4,000
