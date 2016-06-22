@@ -2,11 +2,9 @@
 #include <cstdlib>
 #include <cstdio>
 #include <boost/algorithm/string.hpp>
-
+// #define TeSTSUPPORT
 const int NUM_CHANNELS = 5;
 using Data = std::vector<std::vector<float>>;		// N x 4000
-/* TODO: functional and file documentation */
-// TODO: performance engineering : speed up!
 
 // Read TrainingSet.out (N x 20000), TestSet.out (M x 20000)
 // Parse them into 
@@ -29,7 +27,6 @@ std::vector<float> parseLine(std::vector<std::string>::iterator& strs_it, const 
 	return ret;
 }
 
-// this needs to support custom number of channels, same problem as BagOfWords.cpp?
 void parseDataSet(
 	const std::string& filename,  
 	const int numCenters,
@@ -177,10 +174,9 @@ Data buildKernelFromTrainingSet(
 	return K;
 }
 
-// I still need this function later to build test sets
-/*
 Data buildKernelForTestSet(
 	const std::string& filename,
+	const int numCenters,
 	const float gamma, 
 	const Data& train_displacements, 
 	const Data& train_hog, 
@@ -193,7 +189,7 @@ Data buildKernelForTestSet(
 	Data test_displacements, test_hog, test_hof, test_mbhx, test_mbhy;
 
 	// Fill up the arrays
-	parseDataSet(filename, test_displacements, test_hog, test_hof, test_mbhx, test_mbhy, test_labels);
+	parseDataSet(filename, numCenters, test_displacements, test_hog, test_hof, test_mbhx, test_mbhy, test_labels);
 	std::cout << "Parsing test set Complete" << std::endl;
 
 	const int M = test_displacements.size();	// N : number of training videos
@@ -223,7 +219,7 @@ Data buildKernelForTestSet(
 	std::cout << "Test Kernel calculation complete" << std::endl;
 	
 	return K;
-}*/
+}
 
 void writeKernel(const std::string& filepath, const Data& K, const int M, const int N, const std::vector<int>& labels) {
 	// Write Training Kernel
@@ -239,18 +235,22 @@ void writeKernel(const std::string& filepath, const Data& K, const int M, const 
 int main(int argc, char** argv) {
 	float gamma = std::stof(argv[1]);
 	const int numCenters = std::stoi(argv[2]);
-	const std::string inputFile = argv[3];
+	const std::string trainingSetFile = argv[3];
 	const std::string outputLocation = argv[4];
+	#ifdef TESTSUPPORT
+		const std::string testingSetFile = argv[5];
+	#endif
 	// Compute a chi-squared kernel over training set
 	Data displacements, hog, hof, mbhx, mbhy;
 	std::vector<int> train_labels, test_labels;
 
 	std::vector<float> Ac_training(5, 0.0);
-	Data train_K = buildKernelFromTrainingSet(inputFile, numCenters, gamma, displacements, hog, hof, mbhx, mbhy, train_labels, Ac_training);	// N x N
+	Data train_K = buildKernelFromTrainingSet(trainingSetFile, numCenters, gamma, displacements, hog, hof, mbhx, mbhy, train_labels, Ac_training);	// N x N
 	writeKernel(outputLocation + "KernelTraining.txt", train_K, train_K.size(), train_K.size(), train_labels);
-	
-	//Data test_K = buildKernelForTestSet("NoClustering/Features/Displacements/TestSet.out", gamma, displacements, hog, hof, mbhx, mbhy, test_labels, Ac_training);
-	//writeKernel("NoClustering/Features/Displacements/KernelTest.txt", test_K, test_K.size(), test_K[0].size(), test_labels);
-
+	//TEST SET SUPPORT
+	#ifdef TESTSUPPORT
+		Data test_K = buildKernelForTestSet(testingSetFile, numCenters, gamma, displacements, hog, hof, mbhx, mbhy, test_labels, Ac_training);
+		writeKernel(outputLocation + "KernelTest.txt", test_K, test_K.size(), test_K[0].size(), test_labels);
+	#endif
   return 0;
 }

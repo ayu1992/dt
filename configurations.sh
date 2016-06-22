@@ -18,8 +18,11 @@ _VIDEO_TYPE=".vob"
 
 # Categories and number of videos under each category in the dataset
 declare -A CATEGORIES
-#CATEGORIES=(['Diving-Side']=1)
+# UCFSports
+#CATEGORIES=(['Diving-Side']=5 ['Golf-Swing-Back']=5 ['Golf-Swing-Front']=8 ['Golf-Swing-Side']=5)
 CATEGORIES=(['Diving-Side']=14 ['Golf-Swing-Back']=5 ['Golf-Swing-Front']=8 ['Golf-Swing-Side']=5 ['Kicking-Front']=10 ['Kicking-Side']=10 ['Lifting']=6 ['Riding-Horse']=12 ['Run-Side']=13 ['SkateBoarding-Front']=12 ['Swing-Bench']=20 ['Swing-SideAngle']=13 ['Walk-Front']=22)
+
+# sJHMDB
 #CATEGORIES=(['catch']=25 ['climb_stairs']=22 ['golf']=30 ['jump']=18 ['kick_ball']=16 ['pick']=19 ['pullup']=17 ['push']=18 ['run']=17 ['shoot_ball']=14 ['swing_baseball']=16 ['walk']=15)
 #CATEGORIES=(['catch']=1)
 #CATEGORIES=(['catch']=5 ['climb_stairs']=1 ['golf']=12 ['jump']=8 ['kick_ball']=8 ['pick']=8 ['pullup']=13 ['push']=10 ['run']=7 ['shoot_ball']=6 ['swing_baseball']=7 ['walk']=4)
@@ -54,14 +57,15 @@ _NUM_KMEANS_WORKERS=4
 
 # Max number of trajectories each video can own. If the original number of trajectories exceed
 # this amount, we will random sample $_RAW_TRACK_CAP tracks and discard the rest
-_RAW_TRACK_CAP=6000
+_RAW_TRACK_CAP=2000
 
+# Gamma value defined in [2] page 4 equation 4, we experiment with different values of gamma
 # Values need to be seperated by spaces
-_TEMPORAL_MISALIGNMENT_PENALTY=(0.07)
+_TEMPORAL_MISALIGNMENT_PENALTY=(0.3 0.5 0.7)
 
 # Maximum number of clusters pspectralclustering can make, the number of non-empty clusters after 
-# pspectralclustering tend to be much lower than this amount
-_MAX_NUM_CLUSTER=(500)
+# pspectralclustering tend to be much lower than this amount. This value affects the clustering result.
+_MAX_NUM_CLUSTER=(300 400 500)
 
 # Location to store the results of spectral clustered trajectories
 #
@@ -70,29 +74,41 @@ _MAX_NUM_CLUSTER=(500)
 #   adjacency matrix of the sorted tracks in $_CLUSTERED_TRACKS_PATH/r=../
 #
 # MergeTracks.exe will place: 
-#   supertracks (archive form) in $_CLUSTERED_TRACKS_PATH/r=../c=../archives
-#   supertracks (txt form) in $_CLUSTERED_TRACKS_PATH/r=../c=../supertracks
-#   edges between supertracks (txt form) in $_CLUSTERED_TRACKS_PATH/r=../c=../edges
+#   supertracks (archive form) in $_CLUSTERED_TRACKS_PATH/r=../c=../archives/
+#   supertracks (txt form) in $_CLUSTERED_TRACKS_PATH/r=../c=../supertracks/
+#   edges between supertracks (txt form) in $_CLUSTERED_TRACKS_PATH/r=../c=../edges/
+#
+# LargestClusterExtraction.exe will place:
+#   tracks in the largest cluster (archive form) in $_CLUSTERED_TRACKS_PATH/r=../c=../largestCluster/
 _CLUSTERED_TRACKS_PATH="$_VIDEO_LOCATION/ClusteredTrajectories/sample=$_RAW_TRACK_CAP/"
 
 ################################ Regarding looScore.sh ########################################
 
+# Location of trajectories/super tracks we're gonna use for codebook construction, 
+# NOTE: it can be raw tracks, tracks from the largest clusters, super tracks, or any other form of tracks regardless.
+#       But they need to be in boost::archive form.
+# For [1], point this to $_ARCHIVE_LOCATION, because we just want raw trajectories
+# For [2], point this to $_CLUSTERED_TRACKS_PATH, because we want to use super tracks
+# !important : Also change _TRAINING_TRAJECTORY_LOCATION in looScore.sh to the correct archive location (line 22)
+_TRAINING_TRAJECTORY_LOCATION="NoClustering/earlyDS_idt/"
+
+
 # Channels to be used in Bag of Words procedure. 
 # If you set $_CHANNEL to be other values like MBH, HOG ..., you would need to modify 
-# 1. BagOfWords.cpp lines 285 and 237
+# 1. BagOfWords.cpp lines 290 and 245
 # 2. ChiSquaredSVM.cpp lines 6, 56, 167 and 249.
 _CHANNEL=All
 
-# Sample $_CODEBOOK_SAMPLE trajectories from Training Set to build codebooks
-# In the Dense Track literature, this is set to 100,000
-_CODEBOOK_SAMPLE=10000
+# Sample $_CODEBOOK_SAMPLE trajectories from to build codebooks
+# In the Dense Track [1] literature, this is set to 100,000
+_CODEBOOK_SAMPLE=100000
 
 # Dimension of each codebook
-# In the Dense Track literature, this is set to 4,000
-_CODEBOOK_CENTERS=300
+# In the Dense Track literature [1], this is set to 4,000
+_CODEBOOK_CENTERS=4000
 
-# Location to store super tracks and related files (supertracks in .txt and archive form, edges files, actualNumClusters)
-_SUPERTRACKS_PATH="SuperTracks/sampleCut=$_RAW_TRACK_CAP/$_CHANNEL/"
+# Location to put training set features, svm will read from here
+_TRAININGSET_DESTINATION="IJCV/"
 
 _PATH_TO_LIBSVM="../libsvm/"
 _SVM_TRAIN=$_PATH_TO_LIBSVM"svm-train"

@@ -3,9 +3,8 @@
 #include <dirent.h>
 #include <limits>
 #include <random>
+// #define TESTSUPPORT
 
-/* TODO: functional and file documentation */
-// Needed these lines to work with vlfeat
 extern "C" {
   #include <vl/generic.h>
 }
@@ -237,11 +236,11 @@ void generateFeatures(
 	// transform data to features
 	std::vector<LabelAndTracks> videos = getVideoLabelToTracks(filenames, archivesLocation);
 	std::multimap<int, std::vector<float>> outputFile;	// label -> feaure
-
+	int processDisplayCnt = 0;
 	for (const auto& instance : videos) {	// Each instance corresponds to a video
 		if (instance.second.empty())	continue;
 		//std::cout << instance.second.size() << " tracks" << std::endl;
-		
+		std::cout << "Processing video " << ++processDisplayCnt << std::endl;
 //		std::cout << "Displacements" << std::endl;
 		std::vector<float> feature = transformData<DisplacementsGetter>(codebooks[0].get(), instance.second, numCenters);
 //		std::cout << "Hog" << std::endl;
@@ -262,28 +261,29 @@ void generateFeatures(
 
 int main(int argc, char** argv) {
 
-	/* TODO: Refactor this to accept an archive parser/ txt reader */
-	
 	// Get all archive names in the specified folder
 	std::string trainingSetLocation = argv[1];		// Location of supertracks
-	std::string outputLocation = argv[2];		//"SuperTracks/SampleCut=8000/All/
-	const int kNumRandomSamples = std::stoi(argv[3]);//100000
-	const int numCenters = std::stoi(argv[4]);		// 500
-	// TODO: make this an optional flag
-	//std::string testingSetLocation = argv[5];
+	std::string outputLocation = argv[2];		
+	const int kNumRandomSamples = std::stoi(argv[3]);
+	const int numCenters = std::stoi(argv[4]);		
+
+	#ifdef TESTSUPPORT
+		std::string testingSetLocation = argv[5];
+	#endif
 
 	std::string trainingSetPath = trainingSetLocation;
 	std::vector<std::string> trainingSetNames = getArchiveNames(trainingSetPath);
-
-	//std::vector<std::string> testingSetNames = getArchiveNames(testingSetLocation);
 	
+	#ifdef TESTSUPPORT
+		std::vector<std::string> testingSetNames = getArchiveNames(testingSetLocation);
+	#endif
 	// Randomly sample some trajectories to build codebooks
 	// If there is huge amount of trajectories in the training data, use reservoir sampling by uncommenting the following two lines
-	// std::vector<track> samples(kNumRandomSamples);
-	// getTrainingSamplesByReservoirSampling(samples, trainingSetNames, trainingSetPath, kNumRandomSamples);
+	std::vector<track> samples(kNumRandomSamples);
+	getSamplesByReservoirSampling(samples, trainingSetNames, trainingSetPath, kNumRandomSamples);
 	
 	// If there's only a few hundreds of trajectories, random sampling is recommended
-	std::vector<track> samples = getSamplesByRandomSampling(trainingSetNames, trainingSetPath, kNumRandomSamples);
+	// std::vector<track> samples = getSamplesByRandomSampling(trainingSetNames, trainingSetPath, kNumRandomSamples);
 
 	std::cout << samples.size() << "samples" << std::endl;
 
@@ -304,13 +304,14 @@ int main(int argc, char** argv) {
 		codebooks, 
 		outputLocation + "/s=" + std::to_string(kNumRandomSamples)+ ",nc=" + std::to_string(numCenters) + ".out",
 		numCenters);
-	/*
-	generateFeatures(
-		testingSetNames, 
-		testingSetLocation, 
-		codebooks, 
-		outputLocation + "/test.out",
-		numCenters);
-	*/
+
+	#ifdef TESTSUPPORT
+		generateFeatures(
+			testingSetNames, 
+			testingSetLocation, 
+			codebooks, 
+			outputLocation + "/test.out",
+			numCenters);
+	#endif
 	return 0;
 }

@@ -1,6 +1,8 @@
 source ./configurations.sh
 progress=0
 
+make ParseTracks
+
 # We expect Dense track features from the videos to be already placed in 
 # Path to dataset/category/
 
@@ -13,7 +15,7 @@ do
 	for ((vid=1; vid<=${CATEGORIES[$CATEGORY]}; vid++))
 	do
 		((progress++))
-		./ParseTracks $_DATASET "$_VIDEO_LOCATION$CATEGORY/idt/$vid.features" $_ARCHIVE_LOCATION $CATEGORY $vid
+		./ParseTracks $_DATASET "$_VIDEO_LOCATION$CATEGORY/$vid.features" $_ARCHIVE_LOCATION $CATEGORY $vid
 			
 		pd=$(($progress * 73 / $_NUM_VIDEOS))
 		printf "\r%3d.%1d%% %.${pd}s" $(( $progress * 100 / $_NUM_VIDEOS )) $(( ($progress * 1000 / $_NUM_VIDEOS) % 10 )) $bar
