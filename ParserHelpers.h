@@ -1,3 +1,6 @@
+/**
+ * Helper and utils functions.
+ */
 #include <iostream>
 #include <map>
 #include <unordered_map>
@@ -17,6 +20,7 @@ const int HOF_DIM = 108;
 const int MBHX_DIM = 96;
 const int MBHY_DIM = 96;
 
+// Mappings used and explained in ParseTracks.cpp
 std::map<std::string, int> subJHMDBActionClassMap {
   {"catch", 0},
   {"climb_stairs", 1},
@@ -67,6 +71,15 @@ std::map<std::string, int> OlympicActionClassMap {
   {"javelin_throw", 15}
 };
 
+std::map<std::string, int> kthActionClassMap {
+  {"boxing", 0},
+  {"handclapping", 1},
+  {"handwaving", 2},
+  {"running", 3},
+  {"jogging", 4},
+  {"walking", 5},
+};
+
 // Splits a string into tokens by delim character
 std::vector<float> split(const std::string& str, char delim) {
 	std::vector<float> elems;
@@ -78,28 +91,7 @@ std::vector<float> split(const std::string& str, char delim) {
 	return elems;
 }
 
-// traj id -> cid
-/*To be deprecated*/
-void readClusterId(const std::string& filename, std::unordered_map<int, int>& clusterId) {
-  std::string line;
-  std::ifstream fin(filename.c_str());
-  if (!fin) {
-    std::cerr << "Unable to open file : " << filename << std::endl;
-    return;  
-  }
-
-  int cid, trajIndex = 0;
-  while (std::getline(fin, line)) {
-    std::istringstream iss(line);
-    iss >> cid;
-    clusterId.insert({trajIndex, cid});
-    trajIndex++;
-  }
-  
-  fin.close();
-  return;
-}
-
+// Counts actual number of clusters after pspectral
 int countNonEmptyClusters(const std::string path) {
   std::ifstream fin((path + "result.txt").c_str());
   std::set<int> dedup;
@@ -111,8 +103,9 @@ int countNonEmptyClusters(const std::string path) {
   return dedup.size();
 }
 
-// clusterId : trajId -> cid
-std::unordered_map<int, int> readClusterId(const std::string path) {
+// Reads and parses cluster assignments after pspectral
+// returns a mapping: clusterId (trajectory id -> assigned cluster id)
+std::unordered_map<int, int> readClusterId(const std::string& path) {
   int numActualClusters = countNonEmptyClusters(path);
 
   std::ifstream fin((path + "result.txt").c_str());
@@ -143,32 +136,12 @@ std::unordered_map<int, int> readClusterId(const std::string path) {
   return tidToCid;
 }
 
-int returnIdOfLargestCluster(const std::string& idFilename, std::unordered_map<int, int>& clusterId) {
-    // Read cluster ids'
-  readClusterId(idFilename, clusterId);
-
-  std::map<int, int> clusterSizes;
-  // Identify the biggest cluster (cid)   
-  for (const auto& trjIdCidPair: clusterId) {
-    clusterSizes[trjIdCidPair.second]++;
-  }
-
-  // TODO: Maybe change arg type of the lambda to "const std::pair<int, size_t>&".
-  auto maxElemIter = std::max_element(
-    clusterSizes.begin(), clusterSizes.end(), 
-    [] (const std::pair<int, int>& p1, const std::pair<int, int>& p2) {
-        return p1.second < p2.second;
-    });
-
-  std::cout << "Largest cluster contains " << maxElemIter->second << " tracks" << std::endl;
-  return maxElemIter->first;
-}
-
+// Opens file and places contents into a temporary holder 'strings'
 void readFileIntoStrings (const std::string& filename, std::vector<std::string>& strings) {
   std::string line;
   std::ifstream fin(filename.c_str());
   if (!fin) {
-    std::cerr << "Unable to open file" << std::endl;
+    std::cerr << "Unable to open file: " << filename << std::endl;
     return;  
   }
   while (std::getline(fin, line)) {
@@ -177,4 +150,3 @@ void readFileIntoStrings (const std::string& filename, std::vector<std::string>&
   fin.close();
   return;
 }
-

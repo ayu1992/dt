@@ -1,4 +1,6 @@
-/* Rename this file to BoostArchiveHelpers*/
+/**
+ * Helper functions around boost library.
+ */
 #include "ParserHelpers.h"
 #include <boost/archive/tmpdir.hpp>
 #include <boost/archive/binary_oarchive.hpp>
@@ -10,7 +12,8 @@
 #include <boost/serialization/assume_abstract.hpp>
 #include <boost/algorithm/string.hpp>
 
-/* TODO: functional and file documentation */
+// This struct mirrors the OpenCV::Point2d class and
+// adds support to boost::serialization.
 struct point {
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version) {
@@ -31,6 +34,7 @@ struct point {
   }
 };
 
+// Operator overload
 point operator+(const point& p1, const point& p2)
 {
   return point(p1.x + p2.x, p1.y + p2.y);
@@ -51,16 +55,28 @@ point operator/(const point& p1, const float s)
   return point(p1.x / s, p1.y / s);
 }
 
-void unnormalizePoints(std::vector<point>& points, const float trajectoryLength, const float mean_x, const float mean_y) {
-  for (point& p : points) p = p * trajectoryLength;
+// Unnormalizes displacements into original coordinates. 
+// Saves result in original vector 'normalizedDisplacements'. 
+// First argument 'normalizedDisplacements' contains displacements of coordinates
+//   (pair-wise subtraction and normalization of coordinates, see Descriptors.h isValid())
+void unnormalizePoints(
+  std::vector<point>& normalizedDisplacements,
+  const float trajectoryLength, 
+  const float mean_x, 
+  const float mean_y) {
+
+  for (point& p : normalizedDisplacements) p = p * trajectoryLength;
   // Infer the last point.
-  points.emplace_back(mean_x, mean_y);
-  for (size_t i = 0; i < points.size() - 1; ++i) {
-    points.back() = points.back() + (points[i] * (static_cast<float>(i + 1) / points.size()));
+  normalizedDisplacements.emplace_back(mean_x, mean_y);
+  for (size_t i = 0; i < normalizedDisplacements.size() - 1; ++i) {
+    normalizedDisplacements.back() = 
+        normalizedDisplacements.back() + 
+            (normalizedDisplacements[i] * (static_cast<float>(i + 1) / normalizedDisplacements.size()));
   }
-  for (int i = points.size() - 2; i >= 0; --i) points[i] = points[i + 1] - points[i];
+  for (int i = normalizedDisplacements.size() - 2; i >= 0; --i) normalizedDisplacements[i] = normalizedDisplacements[i + 1] - normalizedDisplacements[i];
 }
 
+// An serializable object that represents a dense trajectory.
 struct track {
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version) {
@@ -72,16 +88,16 @@ struct track {
   int endingFrame;
   float mean_x;
   float mean_y;
-  float var_x;   // var of the coords
+  float var_x;   // variance of the coords
   float var_y;  
-  float length;    // sum of Eucledian distance of Points on the trajectory
+  float length;  // sum of Eucledian distance of Points on the trajectory
   float scale;   // The trajectory is computed on which scale
   float x_pos;
   float y_pos;
   float t_pos;
-  std::vector<point> displacements;   // 15 x 2
-  std::vector<point> coords;          // 16 x 2
-  std::vector<float> hog;
+  std::vector<point> displacements;   // dimension: 15 x 2
+  std::vector<point> coords;          // dimension: 16 x 2
+  std::vector<float> hog;             // features
   std::vector<float> hof;
   std::vector<float> mbhx;
   std::vector<float> mbhy;
@@ -101,6 +117,7 @@ struct track {
   hog(t.hog), hof(t.hof), mbhx(t.mbhx), mbhy(t.mbhy) {}
 };
 
+// Extracts the coordinates from a trajectory
 struct NormalizedPointGetter {
   std::vector<float> operator()(const track& t) {
     std::vector<float> ret(2 * t.coords.size());
@@ -113,6 +130,7 @@ struct NormalizedPointGetter {
   static constexpr int dimension = 32;
 };
 
+// Extracts the displacements from a trajectory
 struct DisplacementsGetter {
   std::vector<float> operator()(const track& t) {
     std::vector<float> ret(2 * t.displacements.size());
@@ -125,26 +143,31 @@ struct DisplacementsGetter {
   static constexpr int dimension = 30;
 };
 
+// Extracts hog features from a trajectory
 struct HogGetter {
   const std::vector<float>& operator()(const track& t) { return t.hog; }
   static constexpr int dimension = 96;
 };
 
+// Extracts hof features from a trajectory
 struct HofGetter {
   const std::vector<float>& operator()(const track& t) { return t.hof; }
   static constexpr int dimension = 108;
 };
 
+// Extracts mbhx features from a trajectory
 struct MbhXGetter {
   const std::vector<float>& operator()(const track& t) { return t.mbhx; }
   static constexpr int dimension = 96;
 };
 
+// Extracts mbhy features from a trajectory
 struct MbhYGetter {
   const std::vector<float>& operator()(const track& t) { return t.mbhy; }
   static constexpr int dimension = 96;
 };
 
+// A serializable object that holds a list of trajectories
 class trackList {
 private:
   friend class boost::serialization::access;
@@ -167,6 +190,8 @@ public:
   const std::vector<std::pair<int, track>>& tracks() const{ return _tracks;}
 };
 
+// A serializable object that represents a video.
+// Contains trajectories, class label and video information
 class videoRep {
 private:
 	friend class boost::serialization::access;
@@ -174,17 +199,21 @@ private:
 	template<class Archive>
 	void serialize(Archive & ar, const unsigned int version) {
 		ar & _tracks;
-		ar & _classLabel;			// label of action class
-    ar & _vid;
-    ar & _videoWidth;
+		ar & _classLabel;			
+    ar & _vid;            
+    ar & _videoWidth;     
     ar & _videoHeight;
 	}
 	// a video is represented by One trajectory cluster/list
 	trackList _tracks;
-	int _classLabel;	
-	int _vid;
-  int _videoWidth;
+  // label of action class
+	int _classLabel;	    
+  // id of the video, in this project, videos are named by {class name}/vid.{video type}
+	int _vid;           
+  // frame dimensions   
+  int _videoWidth;    
   int _videoHeight;
+  /* TODO: parse and store bounding boxes in here*/
 
 public:
 	videoRep() {};
@@ -207,32 +236,36 @@ public:
   const int videoHeight() const {return _videoHeight;}
 };
 
-/* Maybe templatize these two functions? */
+// Restores object from an archive file
 void restoreTrackList(const std::string& path, trackList& tList) {
     std::ifstream ifs(path);    // contains A video
     boost::archive::binary_iarchive ia(ifs);
     ia >> tList;
 }
 
+// Restores object from an archive file
 void restoreVideoRep(const std::string& path, videoRep& video) {
     std::ifstream ifs(path);    // contains A video
     boost::archive::binary_iarchive ia(ifs);
     ia >> video;
 }
 
+// Object to store bounding boxes
 struct Box {
   point UpperLeft;
   float width;
   float height;
 };
 
+// Check if a point is inside a bounding box
 bool isInBox(const point& p, const Box& box) {
   float diffx = p.x - box.UpperLeft.x;
   float diffy = p.y - box.UpperLeft.y;
   return (diffx >= 0 && diffx <= box.width) && (diffy >= 0 && diffy <= box.height);
 }
 
-std::vector<Box> readBoundingBoxes(std::string filepath) {
+// Parses bounding boxes from text file
+std::vector<Box> readBoundingBoxes(const std::string& filepath) {
   // read the boxes frame by frame
   std::string line;
   std::ifstream fin(filepath.c_str());
@@ -248,8 +281,14 @@ std::vector<Box> readBoundingBoxes(std::string filepath) {
   return boxes;
 }
 
+// Reads and parses dense trajectories from file.
+// Stores trajectories in 3rd argument 'tracks'
 void parseFeaturesToTracks(
-  const std::string& filename, std::vector<std::string>& trajInStrings, std::vector<track>& tracks, int& videoWidth, int& videoHeight) {
+  const std::string& filename, 
+  std::vector<std::string>& trajInStrings, 
+  std::vector<track>& tracks, 
+  int& videoWidth, 
+  int& videoHeight) {
   
   readFileIntoStrings(filename, trajInStrings);
   
@@ -285,18 +324,27 @@ void parseFeaturesToTracks(
     std::vector<float>::iterator mbhyIteratorBegin = mbhxIteratorBegin + MBHX_DIM;
     std::vector<float> mbhy(mbhyIteratorBegin, mbhyIteratorBegin + MBHY_DIM);
 
-    if (mbhyIteratorBegin + MBHY_DIM != val.end()) {
-      std::cout << "====================================Bug=======================================" << std::endl;
-      std::cout << filename << std::endl;
-    }
     // Construct Tracks
     tracks.push_back(
       track(static_cast<int>(val[2]), val[3], val[4], val[5], val[6], val[7], val[8], val[9], val[10], val[11], displacements, coords, hog, hof, mbhx, mbhy));
   }
 }
 
-void writeCoordsToFile(const std::string& path, const trackList& tList ) {
-  std::ofstream ots(path + "UnnormalizedCoords.out");
+// Parses a string like "3:5.5" into a pair<int, float>.
+std::pair<int, float> parseIntoPair(const std::string& s) {
+  std::vector<std::string> tmp; // tmp would have 2 elements
+  boost::split(tmp, s, boost::is_any_of(":"));
+
+  if (tmp.size() != 2) {
+    std::cout << "Failed to parse pair: " << s << std::endl;
+    return {-1, -1};
+  }
+  return {std::stoi(tmp[0]), std::stof(tmp[1])};
+}
+
+// Given a list of trajectoires 'tList', writes all of their coordinates into file
+void writeCoordsToFile(const std::string& path, const trackList& tList) {
+  std::ofstream ots(path);
   {
     for (const auto& trackIdTrackPair : tList.tracks()) {
       const track& t = trackIdTrackPair.second;
@@ -311,6 +359,7 @@ void writeCoordsToFile(const std::string& path, const trackList& tList ) {
   ots.close();
 }
 
+// Randomly sample numSamples from source
 template<typename T>
 std::vector<T> randomSample(const std::vector<T>& source, const int numSamples) {
   std::vector<T> copy(source);
@@ -319,10 +368,12 @@ std::vector<T> randomSample(const std::vector<T>& source, const int numSamples) 
   return samples;
 }
 
+// Checks if a particular kind of feature is missing from a trajectory
 template <typename Functor>
 bool checkIsFeatureEmpty(const track& t) {
   return !Functor()(t).size();
 }
+
 bool checkContainsEmptyFeature(const track& t) {
   return 
     checkIsFeatureEmpty<DisplacementsGetter>(t) || 
@@ -332,6 +383,7 @@ bool checkContainsEmptyFeature(const track& t) {
       checkIsFeatureEmpty<MbhYGetter>(t);
 }
 
+// Checks every channels of a trajectory for NaN values
 void checkContainNaN(const std::vector<track>& tracks) {
   std::cout << "Checking for dirty data" << std::endl;
   bool isDirty;
@@ -349,16 +401,4 @@ void checkContainNaN(const std::vector<track>& tracks) {
     }
     if (isDirty) std::cout << "===========================Dirty data============================" << std::endl;
   }
-}
-
-// Parse a string like "3:5.5" into a pair<int, float>.
-std::pair<int, float> parseIntoPair(const std::string& s) {
-  std::vector<std::string> tmp; // tmp would have 2 elements
-  boost::split(tmp, s, boost::is_any_of(":"));
-
-  if (tmp.size() != 2) {
-    std::cout << "Failed to parse pair: " << s << std::endl;
-    return {-1, -1};
-  }
-  return {std::stoi(tmp[0]), std::stof(tmp[1])};
 }

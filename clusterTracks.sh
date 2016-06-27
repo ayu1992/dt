@@ -2,7 +2,7 @@ source ./configurations.sh
 progress=0
 
 # This script will read from Path to archive/*.out and place its
-# outputs in $_CLUSTERED_TRACKS_PATH/r={some int value}/c={some int value}/
+# outputs under: $_CLUSTERED_TRACKS_PATH/r={some int value}/c={some int value}/
 
 #!/bin/bash
 # Each run on this script 
@@ -14,7 +14,7 @@ progress=0
 #
 # Implementing Super Track project
 # 4. then for each cluster we merge all its tracks into a super trajectory
-# 5. output those trajectories and their pair-wise similarities (here we call them "edges")
+# 5. output those trajectories and their pair-wise similarities
 # 
 # Implementing Chen & Corso's work
 # 5. we extract the trajectories that belong to the largest cluster
@@ -69,30 +69,31 @@ do
 				
 				# A Mapping of video name to number of non-empty clusters will be written to 
 				# $OUTPUT_LOCATION/actualNumClusters
-				#echo "Counting actual clusters"
-				#./countActualClusters $OUTPUT_LOCATION $CATEGORY$vid
+				echo "Counting actual clusters"
+				./countActualClusters $OUTPUT_LOCATION $CATEGORY$vid
 				
 				# Uncomment to Visualize partition quality, the binaries will produce .avi files in $OUTPUT_LOCATION
 				# echo "Drawing clustered results"
 				#./GetCoordsForClusters $GRAPH_PATH$CATEGORY$vid $OUTPUT_LOCATION
-				#./DrawClusters $OUTPUT_LOCATION $_VIDEO_LOCATION $CATEGORY $vid $c
+				#./DrawClusters $OUTPUT_LOCATION $_VIDEO_LOCATION $CATEGORY $vid $c $_VIDEO_TYPE
 								
-				mkdir -p $OUTPUT_LOCATION"edges/"
+				mkdir -p $OUTPUT_LOCATION"similarities/"	# Similarities between supertracks
 				mkdir -p $OUTPUT_LOCATION"supertracks/"		# Here we store supertracks in txt form
 				mkdir -p $OUTPUT_LOCATION"archive/"			# Here we store supertracks in archive form
 				mkdir -p $OUTPUT_LOCATION"largestCluster/"
+				mkdir -p $OUTPUT_LOCATION"superTrackCoords/"	# Here we store coords to plot
 
 				# Supertracks project
 				# echo "Merging trajectories"
-				# ./MergeTracks $_GRAPH_PATH $OUTPUT_LOCATION $c $CATEGORY $vid
+				./MergeTracks $_GRAPH_PATH $OUTPUT_LOCATION $c $CATEGORY $vid
 				
 				# Largest Cluster Extraction (Chen & Corso)
-				echo "Extracting largest clusters as video representations"
-				./LargestClusterExtraction $_GRAPH_PATH $OUTPUT_LOCATION $c $CATEGORY $vid
+				#echo "Extracting largest clusters as video representations"
+				#./LargestClusterExtraction $_GRAPH_PATH $OUTPUT_LOCATION $c $CATEGORY $vid
 
-				# Uncomment here and writeCoordsToFile function in MergeTracks to Visualize super tracks
+				# Uncomment here and enable writeCoordsToFile function in MergeTracks to Visualize super tracks
 				# echo "Drawing super tracks"
-				#./DrawTracks $OUTPUT_LOCATION $_VIDEO_LOCATION $CATEGORY $vid
+				#./DrawTracks $OUTPUT_LOCATION $_VIDEO_LOCATION $CATEGORY $vid $_VIDEO_TYPE
 				
 				duration=$SECONDS
 				echo "==========================$(($duration / 60)) minutes and $(($duration % 60)) seconds=========================="

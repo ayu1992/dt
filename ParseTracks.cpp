@@ -1,30 +1,35 @@
+/**
+ * Reads *.features, parse them into track objects (defined in BoostRelatedHelpers.h)
+ * output sorted trajectories.
+ */ 
 #include "BoostRelatedHelpers.h"
-/* Read *.features, output sortedTrajectories */
-// TODO: file and functional documentations
-int main(int argc, char** argv) {
-	std::string dataset = argv[1];
 
-	std::string videoLocation = argv[2];
-	std::string archiveLocation = argv[3];
+int main(int argc, char** argv) {
+	const std::string dataset = argv[1];
+	const std::string videoLocation = argv[2];
+	const std::string archiveLocation = argv[3];
 	
  	std::vector<track> tracks; 
+ 	// a temporary object to hold the strings read from file
   	std::vector<std::string> trajInStrings;
   	int videoWidth, videoHeight;
   	parseFeaturesToTracks(videoLocation, trajInStrings, tracks, videoWidth, videoHeight); 
   	std::cout << "[ParseTracks] "<< tracks.size() << " trajectories in total" << std::endl;
 
   	trackList tList;
-  	// Stuff dummy trajectory indices
+  	// Stuff dummy trajectory indices, real functional indices will be assigned in BuildGraph.cpp
   	for (const auto & t : tracks) {
 	    tList.addTrack(0, t);
 	}
 
-  	std::string actionCategory = argv[4];
+  	const std::string actionCategory = argv[4];
 
-	int vid = std::stoi(argv[5]);
+	const int vid = std::stoi(argv[5]);
 
 	int actionIndex = -1;
-	/* Obviously needs refactoring*/
+
+	// Assigning an integer class label for this video.
+	// Finds the corresponding label mapping for this dataset (defined in ParserHelper.h)
 	if (dataset.compare("OlympicSports") == 0) {
 		actionIndex = OlympicActionClassMap[actionCategory];
 	} else if (dataset.compare("UCFSports") == 0){
@@ -42,10 +47,12 @@ int main(int argc, char** argv) {
 		std::cout << actionIndex << std::endl;
 	}
 	
+	// Packs everything into a video representation and output
 	videoRep video(tList, actionIndex, vid, videoWidth, videoHeight);
   	std::ofstream ofs(archiveLocation + actionCategory + "_" + std::to_string(vid) + ".out");
 	{
 	    boost::archive::binary_oarchive oa(ofs);
-	    oa << video;   	 							// archive and stream closed when destructors are called
+	    oa << video;   	
 	}
+	return 0;
 }

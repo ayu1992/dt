@@ -1,3 +1,4 @@
+// Implements Bag of Words scheme on trajectories
 #include "BoostRelatedHelpers.h"
 #include <ctime>
 #include <dirent.h>
@@ -5,6 +6,7 @@
 #include <random>
 // #define TESTSUPPORT
 
+// Include these to compile against vlfeat libraries
 extern "C" {
   #include <vl/generic.h>
 }
@@ -15,7 +17,7 @@ constexpr int numCodebookIter = 8;
 using ClassToFileNames = std::map<std::string, std::vector<std::string>>;
 using LabelAndTracks = std::pair<int, std::vector<track>>;
 
-/* Reads and load a bunch of archives (from a specified location) in memory and output feature vectors */
+// Reads all trajectory archives under specified folder location, returns their names
 std::vector<std::string> getArchiveNames(const std::string trainingSetLocation) {
 	std::vector<std::string> archiveNames;
 	DIR* dirp = opendir(trainingSetLocation.c_str());
@@ -30,6 +32,7 @@ std::vector<std::string> getArchiveNames(const std::string trainingSetLocation) 
 	return archiveNames;
 }
 
+// reservoir sampling strategy
 template <typename T>
 void reservoirSample(
 	std::vector<T>& samples,
@@ -49,6 +52,10 @@ void reservoirSample(
 	samples[i] = t;
 }
 
+// Given names of trajectory archives, 
+// sample some trajectories from them via reservoir sampling
+// this is suitable when the total number of trajectories is very large
+// (has possibility of seg faulting if isn't large enough)
 void getSamplesByReservoirSampling(
 	std::vector<track>& samples,
 	const std::vector<std::string>& archiveNames, 
@@ -56,7 +63,7 @@ void getSamplesByReservoirSampling(
 	const int kNumRandomSamples) {
 	int j = 0;
 	for (const std::string& path : archiveNames) {
-		// TODO (ananyu) : refactor this into videoRep's interface
+		// TODO: refactor this into videoRep's member function
 		videoRep video;
 		restoreVideoRep(archivesLocation + path, video);
 		std::cout << "Video contains " << video.getTrackList().tracks().size() << "tracks " << std::endl;
@@ -66,6 +73,9 @@ void getSamplesByReservoirSampling(
 	}
 }
 
+// Given names of trajectory archives, 
+// sample some trajectories from them via random sampling
+// this is suitable when the total number of trajectories is small
 std::vector<track> getSamplesByRandomSampling(
 	const std::vector<std::string>& archiveNames, 
 	const std::string archivesLocation, 
@@ -83,6 +93,8 @@ std::vector<track> getSamplesByRandomSampling(
 	return randomSample(pool, kNumRandomSamples);
 }
 
+// Extracts features of a certain type from trajectories and puts them in an array
+// to support C styled interfaces
 template <typename Functor>
 std::unique_ptr<float[]> getData (const std::vector<track>& tracks) {
 
@@ -100,6 +112,7 @@ std::unique_ptr<float[]> getData (const std::vector<track>& tracks) {
 	return data;
 }
 
+// Makes a codebook for a channel
 template <typename Functor>
 std::unique_ptr<VlKMeans> makeCodebook(float* data, const int numData, const int numCenters) {
 	std::cout << "Making codebook" << std::endl;
@@ -140,8 +153,12 @@ std::unique_ptr<VlKMeans> makeCodebook(float* data, const int numData, const int
 	return std::move(kmeansInstances[index]);
 }
 
+// Sample some tracks from trainingSet and build a codebook for a channel
 template <typename Functor>
-std::unique_ptr<VlKMeans> getCodebook(const std::vector<track>& trainingSet, const int numCenters, const int kNumRandomSamples) {
+std::unique_ptr<VlKMeans> getCodebook(
+	const std::vector<track>& trainingSet, 
+	const int numCenters, 
+	const int kNumRandomSamples) {
 	 //checkContainNaN(trainingSet);
 	std::unique_ptr<float []> data = getData<Functor>(trainingSet);
 	return makeCodebook<Functor>(data.get(), kNumRandomSamples, numCenters);	
@@ -170,6 +187,7 @@ inline float computeDistance(const std::vector<float>& data, const float* center
 	return std::isfinite(distance) ? distance : std::numeric_limits<float>::max();
 }
 
+// Implementation of vl_kmeans_quantize, which sometimes has silent bugs and erronous assignments.
 template <typename Functor>
 std::vector<int> quantize(VlKMeans* kmeans, const std::vector<track>& tracks, const int numCenters) {
 	std::vector<int> assignments(tracks.size(), -1);
@@ -261,9 +279,8 @@ void generateFeatures(
 
 int main(int argc, char** argv) {
 
-	// Get all archive names in the specified folder
-	std::string trainingSetLocation = argv[1];		// Location of supertracks
-	std::string outputLocation = argv[2];		
+	const std::string trainingSetLocation = argv[1];		// Location of supertracks
+	const std::string outputLocation = argv[2];		
 	const int kNumRandomSamples = std::stoi(argv[3]);
 	const int numCenters = std::stoi(argv[4]);		
 
@@ -272,24 +289,26 @@ int main(int argc, char** argv) {
 	#endif
 
 	std::string trainingSetPath = trainingSetLocation;
+	// Gets all archive file names under trainingSetPath, use them as training set
 	std::vector<std::string> trainingSetNames = getArchiveNames(trainingSetPath);
 	
 	#ifdef TESTSUPPORT
 		std::vector<std::string> testingSetNames = getArchiveNames(testingSetLocation);
 	#endif
 	// Randomly sample some trajectories to build codebooks
-	// If there is huge amount of trajectories in the training data, use reservoir sampling by uncommenting the following two lines
+	// If there is huge amount of trajectories in the training data, 
+	// use reservoir sampling by uncommenting the following two lines
 	std::vector<track> samples(kNumRandomSamples);
 	getSamplesByReservoirSampling(samples, trainingSetNames, trainingSetPath, kNumRandomSamples);
 	
 	// If there's only a few hundreds of trajectories, random sampling is recommended
-	// std::vector<track> samples = getSamplesByRandomSampling(trainingSetNames, trainingSetPath, kNumRandomSamples);
+	// std::vector<track> samples = 
+	//    getSamplesByRandomSampling(trainingSetNames, trainingSetPath, kNumRandomSamples);
 
 	std::cout << samples.size() << "samples" << std::endl;
 
 	// Compute codebook from samples
 	std::vector<std::unique_ptr<VlKMeans>> codebooks;
-	// Given some tracks, compute 5 x 4000
 	std::cout << "Compute codebooks for 5 channels" << std::endl;
 	codebooks.push_back(getCodebook<DisplacementsGetter>(samples, numCenters, kNumRandomSamples));
 	codebooks.push_back(getCodebook<HogGetter>(samples, numCenters, kNumRandomSamples));
@@ -302,7 +321,8 @@ int main(int argc, char** argv) {
 		trainingSetNames, 
 		trainingSetPath, 
 		codebooks, 
-		outputLocation + "/s=" + std::to_string(kNumRandomSamples)+ ",nc=" + std::to_string(numCenters) + ".out",
+		outputLocation + 
+		    "/s=" + std::to_string(kNumRandomSamples)+ ",nc=" + std::to_string(numCenters) + ".out",
 		numCenters);
 
 	#ifdef TESTSUPPORT

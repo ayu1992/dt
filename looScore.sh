@@ -1,4 +1,5 @@
 #!/bin/bash
+# Executes Leave one out cross validation
 source /home/hydralisk/Documents/dt/configurations.sh
 
 # Pre-generate a range of floats

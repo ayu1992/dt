@@ -1,10 +1,9 @@
+// Converts a sortedTrajectories archive to coords values in .txt
 #include "BoostRelatedHelpers.h"
-// converts sortedTrajectories archive into coords values in a .txt file
-// ClusteredTrajectories/r=2/c=500/ 
 int main(int argc, char** argv) {
 	// path to sortedTrajecotries and result.txt
-	std::string graphPath = argv[1];		
-	std::string clusterResultPath = argv[2];
+	const std::string graphPath = argv[1];		
+	const std::string clusterResultPath = argv[2];
 	// Reads result.txt, sortedTrajectories.out
 	std::unordered_map<int, int> clusterId = readClusterId(clusterResultPath);
 

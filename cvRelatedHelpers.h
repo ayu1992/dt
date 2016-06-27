@@ -1,21 +1,28 @@
+/**
+ * Helper functions around OpenCV
+ */
 #include "ParserHelpers.h"
 #include "Descriptors.h"
 
 const int COORDS_LENGTH = 32;
 
+// Mirrors a bounding box wrapper object as in BoostRelatedHelpers
+// But this can be linked with OpenCV libraries
 struct Box {
   Point2f UpperLeft;
   float width;
   float height;
 };
 
+// Checks if a point lies within a bounding box
 bool isInBox(const Point2f& p, const Box& box) {
   float diffx = p.x - box.UpperLeft.x;
   float diffy = p.y - box.UpperLeft.y;
   return (diffx >= 0 && diffx <= box.width) && (diffy >= 0 && diffy <= box.height);
 }
 
-std::vector<Box> readBoundingBoxes(std::string filepath) {
+// Reads and parses bounding boxes
+std::vector<Box> readBoundingBoxes(const std::string& filepath) {
   // read the boxes frame by frame
   std::string line;
   std::ifstream fin(filepath.c_str());
@@ -31,19 +38,30 @@ std::vector<Box> readBoundingBoxes(std::string filepath) {
   return boxes;
 }
 
-void unnormalizePoints(std::vector<Point2f>& points, const float trajectoryLength, const float mean_x, const float mean_y) {
-  for (Point2f& p : points) p = p * trajectoryLength;
+// Unnormalizes displacements into original coordinates. 
+// Saves result in original vector 'normalizedDisplacements'. 
+// First argument 'normalizedDisplacements' contains displacements of coordinates
+//   (pair-wise subtraction and normalization of coordinates, see Descriptors.h isValid())
+void unnormalizePoints(
+  std::vector<Point2f>& normalizedDisplacements, 
+  const float trajectoryLength, 
+  const float mean_x, 
+  const float mean_y) {
+  for (Point2f& p : normalizedDisplacements) p = p * trajectoryLength;
   // Infer the last point.
-  points.emplace_back(mean_x, mean_y);
-  for (size_t i = 0; i < points.size() - 1; ++i) {
-    points.back() = points.back() + (points[i] * (static_cast<float>(i + 1) / points.size()));
+  normalizedDisplacements.emplace_back(mean_x, mean_y);
+  for (size_t i = 0; i < normalizedDisplacements.size() - 1; ++i) {
+    normalizedDisplacements.back() = 
+        normalizedDisplacements.back() + 
+            (normalizedDisplacements[i] * (static_cast<float>(i + 1) / normalizedDisplacements.size()));
   }
-  for (int i = points.size() - 2; i >= 0; --i) points[i] = points[i + 1] - points[i];
+  for (int i = normalizedDisplacements.size() - 2; i >= 0; --i) normalizedDisplacements[i] = normalizedDisplacements[i + 1] - normalizedDisplacements[i];
 }
 
+// Returns a random color
 Scalar getRandomColor(void) {
     int r = rand() % 255;
-    //r = (r + 300) / 2;
+    //r = (r + 300) / 2;  // uncomment for lighter palette
     int g = rand() % 255;
     //g = (g + 300) / 2;
     int b = rand() % 255;
@@ -51,7 +69,13 @@ Scalar getRandomColor(void) {
     return Scalar(r,g,b);
 }
 
-void createVideoFromImages(const std::string& videoOut, const int fourcc, const double fps, const Size frameSize, const std::vector<Mat>& frames) {
+// Writes images from 'frames' into a video file
+void createVideoFromImages(
+  const std::string& videoOut, 
+  const int fourcc, 
+  const double fps, 
+  const Size frameSize, 
+  const std::vector<Mat>& frames) {
   VideoWriter writer;
   writer.open(videoOut.c_str(), fourcc, fps, frameSize, true);
   if(!writer.isOpened()) {
@@ -67,6 +91,7 @@ void createVideoFromImages(const std::string& videoOut, const int fourcc, const 
   writer.release();
 }
 
+// Opens a video file and simple error handling
 VideoCapture openVideo(const std::string& videoPath) {
   VideoCapture capture;
   capture.open(videoPath.c_str());
@@ -78,6 +103,7 @@ VideoCapture openVideo(const std::string& videoPath) {
   return capture;
 }
 
+// Extracts frames from a video
 std::vector<Mat> getFramesFromVideo(VideoCapture& capture) {
   std::vector<Mat> frames;
   Mat temporary, grey;

@@ -1,3 +1,7 @@
+/**
+ *	Replay the original video and draw tracks on top of it.
+ *  The video will be placed in the same location as the input trajectory file.
+ */
 #include "cvRelatedHelpers.h"
 //#define VISUALIZE
 using namespace cv;
@@ -5,14 +9,25 @@ using namespace cv;
 void parseAndDraw(
 	const std::vector<std::string> trjInStrings,
 	std::vector<Mat>& frames) {
-
+	bool isTrackValid;
 	for (const auto& str : trjInStrings) {
+		isTrackValid = true;
 		std::vector<float> vals = split(str, ' ');
 		int endingFrame = vals[0];
 		std::vector<Point2f> coords;
 		for (auto vals_it = vals.begin() + 1; vals_it != vals.begin() + COORDS_LENGTH - 1; vals_it += 2) {
 			coords.emplace_back(*vals_it, *(vals_it + 1));
 		}
+
+		for (const auto &val : coords) {
+			if (val.x < 0 || val.y < 0)	{
+				std::cout << "invalid track" << std::endl;
+				isTrackValid = false;	// Negative coordinates in some track, shouldn't plot it
+				break;
+			}
+		}
+		// Discard invalid tracks and plot the rest
+		if (!isTrackValid)	continue;
 
 		for(size_t i = 0; i < coords.size(); i++) {
 			// Draw circle
@@ -32,39 +47,38 @@ void parseAndDraw(
 	}
 }
 
-/**
- *	Replay the original video and draw tracks on top of it
- */
-// Input: tracks
-// ClusteredTrajecotories/r=2/c=500/ UCFSports/original/Diving-Side/ 1
 int main(int argc, char** argv) {
 
-	std::string outPath = argv[1];	// location of coords file
+	const std::string outPath = argv[1];	// location of coords file
 
 	// Doesn't require trajectories to be sorted
 	std::vector<std::string> trjInStrings;
-	readFileIntoStrings(outPath + "UnnormalizedCoords.out", trjInStrings);
+	readFileIntoStrings(outPath, trjInStrings);
 
-    std::string inpath = argv[2];	// location of video
+    const std::string inpath = argv[2];	// location of video
 
-    std::string videoClass = argv[3];
+    const std::string videoClass = argv[3];
 
-	int vid = std::stoi(argv[4]);
+	const int vid = std::stoi(argv[4]);
+
+	const std::string videoFileType = argv[5];
 
 	// Open Video to read
-	VideoCapture capture = openVideo(inpath + std::to_string(vid) + ".vob");
+	VideoCapture capture = openVideo(inpath + std::to_string(vid) + videoFileType);
 
 	std::vector<Mat> frames = getFramesFromVideo(capture);
 
-	//std::cout << "Reading bounding boxes" << std::endl;
- 	//std::vector<Box> boxes = readBoundingBoxes(inpath + std::to_string(vid) + ".txt");
+	// Bounding boxes need to be preprocessed into the format accepted by 
+	// readBoundingBoxes() in cvRelatedHelpers.h
+	// std::cout << "Reading bounding boxes" << std::endl;
+ 	// std::vector<Box> boxes = readBoundingBoxes(inpath + std::to_string(vid) + ".txt");
 
     // Draw circles on the frames
-	std::cout << "[DrawClusters] Drawing circles" << std::endl;
+	std::cout << "[DrawTracks] Drawing circles" << std::endl;
 	
 	parseAndDraw(trjInStrings, frames);
 
-	std::cout << "[DrawClusters] Writing videos" << std::endl;
+	std::cout << "[DrawTracks] Writing videos" << std::endl;
 	// Open video to write
 	createVideoFromImages(
 		outPath + videoClass + "_" + std::to_string(vid) + ".avi", 

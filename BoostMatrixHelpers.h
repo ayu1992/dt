@@ -4,7 +4,7 @@
 
 using namespace boost::numeric::ublas;
 
-/* Third party code, refactor
+/* refactored third party code, 
  Uses lu_factorize and lu_substitute in uBLAS to invert a matrix */
 template<class T>
 bool InvertMatrix(const matrix<T>& input, matrix<T>& inverse)

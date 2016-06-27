@@ -15,13 +15,14 @@ _VIDEO_LOCATION="$_DATASET/original/"
 # Total number of videos in this dataset, over all classes
 _NUM_VIDEOS=150
 
-_VIDEO_TYPE=".avi"
+_VIDEO_TYPE=".vob"
 
 # Categories and number of videos under each category in the dataset
 declare -A CATEGORIES
 # UCFSports
+CATEGORIES=(['Diving-Side']=1)
 #CATEGORIES=(['Diving-Side']=5 ['Golf-Swing-Back']=5 ['Golf-Swing-Front']=8 ['Golf-Swing-Side']=5)
-CATEGORIES=(['Diving-Side']=14 ['Golf-Swing-Back']=5 ['Golf-Swing-Front']=8 ['Golf-Swing-Side']=5 ['Kicking-Front']=10 ['Kicking-Side']=10 ['Lifting']=6 ['Riding-Horse']=12 ['Run-Side']=13 ['SkateBoarding-Front']=12 ['Swing-Bench']=20 ['Swing-SideAngle']=13 ['Walk-Front']=22)
+#CATEGORIES=(['Diving-Side']=14 ['Golf-Swing-Back']=5 ['Golf-Swing-Front']=8 ['Golf-Swing-Side']=5 ['Kicking-Front']=10 ['Kicking-Side']=10 ['Lifting']=6 ['Riding-Horse']=12 ['Run-Side']=13 ['SkateBoarding-Front']=12 ['Swing-Bench']=20 ['Swing-SideAngle']=13 ['Walk-Front']=22)
 
 # sJHMDB
 #CATEGORIES=(['catch']=1)
@@ -69,7 +70,7 @@ _TEMPORAL_MISALIGNMENT_PENALTY=(0.05)
 
 # Maximum number of clusters pspectralclustering can make, the number of non-empty clusters after 
 # pspectralclustering tend to be much lower than this amount. This value affects the clustering result.
-_MAX_NUM_CLUSTER=(300)
+_MAX_NUM_CLUSTER=(200)
 
 # Location to store the results of spectral clustered trajectories
 #
@@ -80,7 +81,7 @@ _MAX_NUM_CLUSTER=(300)
 # MergeTracks.exe will place: 
 #   supertracks (archive form) in $_CLUSTERED_TRACKS_PATH/r=../c=../archives/
 #   supertracks (txt form) in $_CLUSTERED_TRACKS_PATH/r=../c=../supertracks/
-#   edges between supertracks (txt form) in $_CLUSTERED_TRACKS_PATH/r=../c=../edges/
+#   similarities between supertracks (txt form) in $_CLUSTERED_TRACKS_PATH/r=../c=../similarities/
 #
 # LargestClusterExtraction.exe will place:
 #   tracks in the largest cluster (archive form) in $_CLUSTERED_TRACKS_PATH/r=../c=../largestCluster/

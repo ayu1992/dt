@@ -1,3 +1,9 @@
+/**
+ * Reads cluster assignment and trajectories
+ * Computes super trajectories by merging tracks in the same cluster
+ */
+// I'm computing full matrices here for ease of debugging
+// you may consider just computing only the top triangles to enhance the performance.
 #include <algorithm>
 #include <cstdio>
 #include <functional>
@@ -7,18 +13,17 @@
 
 #include <boost/algorithm/string.hpp>
 #include "BoostRelatedHelpers.h"
-/*
-TODO: file and functional documentation
-speed up
-*/
+
 using Edges = std::vector<std::vector<float>>;		// Express graph edges in terms of a KxK matrix
 
+// Adding two vectors by performing plus operation on each element
 template <typename T>
 void vectorAdd(const std::vector<T>& v1, std::vector<T>& v2) {
 	std::transform(v1.begin(), v1.end(), v2.begin(), v2.begin(), std::plus<T>());
 }
 
-void addToTrack(const track& newTrack, track& targetTrack) {	// add newTrack to targetTracks
+// Add newTrack to targetTracks
+void addToTrack(const track& newTrack, track& targetTrack) {	
 	vectorAdd(newTrack.displacements, targetTrack.displacements);
 	vectorAdd(newTrack.coords, targetTrack.coords);
 	vectorAdd(newTrack.hog, targetTrack.hog);
@@ -27,6 +32,7 @@ void addToTrack(const track& newTrack, track& targetTrack) {	// add newTrack to 
 	vectorAdd(newTrack.mbhy, targetTrack.mbhy);
 }
 
+// A functor that computes average values for a type of feature
 struct TakeAverageForFeature {
   const float numTracksAdded;
   TakeAverageForFeature(int numTracksAdded) : numTracksAdded(numTracksAdded) {}
@@ -37,7 +43,8 @@ struct TakeAverageForFeature {
   }
 };
 
-// find supertrack representation for a group of tracks
+// Computes supertrack representation for a group of tracks.
+// Here we employ a simple averaging strategy on each channel.
 track computeSuperTrackFromGroup(const std::vector<track>& tracks) {
 
 	track superTrack(tracks[0]);	// tracks remains sorted by endingFrames
@@ -48,7 +55,6 @@ track computeSuperTrackFromGroup(const std::vector<track>& tracks) {
 	}
 
 	// take average and statistics
-	
 	if (numTracksAdded) {
 		auto take_average_for_feature = TakeAverageForFeature(numTracksAdded);
 		take_average_for_feature(superTrack.displacements);
@@ -58,12 +64,15 @@ track computeSuperTrackFromGroup(const std::vector<track>& tracks) {
 		take_average_for_feature(superTrack.mbhx);
 		take_average_for_feature(superTrack.mbhy);
 	}
+
 	// recalculate means, var if neccessary
 	checkContainsEmptyFeature(superTrack);
 	return superTrack;
 }
 
-// clusterId : trajId -> cid
+// Given a list of trajecotries, reads everyone's cluster assigment
+// and computes a super track for each cluster.
+// clusterId : a mapping from trajectoryId -> assigned cluster id
 // tList is sorted in endingFrame by ascending order
 trackList computeSuperTracks(
 	const int numClusters, 
@@ -72,23 +81,27 @@ trackList computeSuperTracks(
 	
 	trackList superTracks;			// rvo
 	
-	// place the trajectories to their respective groups
+	// put the trajectories to their respective clusters
 	std::vector<std::vector<track>> groups(numClusters, std::vector<track>());
 	for (const auto& idTrackPair : tList.tracks()) {	// pair<track id, track>
 		int cid = clusterId.find(idTrackPair.first)->second;	
 		groups[cid].push_back(idTrackPair.second);	// cid - 1?
 	}
 
-	// For each group of trajectories, compute a representation
-	for (int cid = 0; cid < groups.size(); ++cid) {
+	// For each cluster of trajectories, compute a super track representation
+	for (size_t cid = 0; cid < groups.size(); ++cid) {
 		if (groups[cid].size() > 0) {
 			superTracks.addTrack(cid, computeSuperTrackFromGroup(groups[cid]));	// cid become superTrackId			
 		}
 	}
+
 	std::cout << superTracks.size() << "non empty super tracks" << std::endl;
  	return superTracks;
 }
 
+// Reads the graph (computed in BuildGraph.cpp) defined on original tracks 
+// where nodes are trajectories and distances are measured by a combination of spatial distances and 
+// frame misalignment penalties (see Corso's eq 4)
 Edges readDij(const std::string& filename, const int numPrimitiveTracks, float& dijSum) {
 	Edges dij(numPrimitiveTracks, std::vector<float>(numPrimitiveTracks, -1));	// -1 to replace inf
 	std::vector<std::string> lines;
@@ -108,6 +121,7 @@ Edges readDij(const std::string& filename, const int numPrimitiveTracks, float& 
 	return dij;
 }
 
+// Converts distances (between 0 to inf) to similarity values (between 0 to 1)
 Edges distanceToSimilarityViaGaussianKernel(const Edges& dij, const float dijSum) {
 	Edges sij(dij.size(), std::vector<float>(dij.size(), 0));
 
@@ -122,7 +136,7 @@ Edges distanceToSimilarityViaGaussianKernel(const Edges& dij, const float dijSum
 	return sij;
 }
 
-Edges computeEdgeWeights(
+Edges computeSimilarities(
 	const std::string& filename,
 	const int numPrimitiveTracks, 
     const std::unordered_map<int, int>& clusterId,
@@ -130,17 +144,17 @@ Edges computeEdgeWeights(
 	
 	float dijSum = 0.0;
 	Edges dij = readDij(filename, numPrimitiveTracks, dijSum);
-	// some check
+
 	Edges sij = distanceToSimilarityViaGaussianKernel(dij, dijSum);
 
-	// Edges of supertracks
+	// similarities of supertracks
 	Edges ret(numClusters, std::vector<float>(numClusters, 0));
 
 	for (int i = 0; i < sij.size(); ++i) {
 		for (int j = 0; j < sij.size(); ++j) {
 			int ci = clusterId.find(i)->second;
 			int cj = clusterId.find(j)->second;
-			// Self edges are allowed
+			// Self similarities are allowed
 			if (sij[i][j] > 0) {
 				ret[ci][cj] += sij[i][j];
 				if (ci != cj) {
@@ -153,10 +167,10 @@ Edges computeEdgeWeights(
 	return ret;
 }
 
-// edges is C x C
-void writeEdgesToFile(const std::string& path, const Edges& edges) {
+// similarities is C x C
+void writeSimilaritiesToFile(const std::string& path, const Edges& similarities) {
 	FILE* fout = fopen(path.c_str(), "w");
-	for (const auto& v : edges) {
+	for (const auto& v : similarities) {
 		for (const auto& vv : v) {
 			fprintf(fout, "%f ", vv);
 		}
@@ -164,6 +178,7 @@ void writeEdgesToFile(const std::string& path, const Edges& edges) {
 	}
 }
 
+// Prints values of a type of feature
 template <typename Functor>
 std::string printFeature(const track& t) {
 	
@@ -220,10 +235,8 @@ int main(int argc, char** argv) {
 	std::cout << "Number of supertracks " << superTracks.size() << std::endl;
 
 	// Returns a CxC matrix.
-	std::cout << "Computing edge weights" << std::endl;
-	Edges edgeWeights = computeEdgeWeights(primitiveGraphPath + videoName + "_dij.txt", tList.tracks().size(), clusterId, superTracks.size());
-
-	// Output to archive, print edge weights
+	std::cout << "Computing similarities" << std::endl;
+	Edges similarities = computeSimilarities(primitiveGraphPath + videoName + "_dij.txt", tList.tracks().size(), clusterId, superTracks.size());
 	
 	/* ARCHIVE OUTPUTS*/
 	std::cout << "Output super tracks to archive" << std::endl;
@@ -235,13 +248,13 @@ int main(int argc, char** argv) {
 	}
 
 	/* RAW DATA OUTPUTS*/
-	std::cout << "Writing edge weights" << std::endl;
-	writeEdgesToFile(clusterResultPath + "edges/" + videoName + "_edges.txt", edgeWeights);
+	std::cout << "Writing similarities between super tracks" << std::endl;
+	writeSimilaritiesToFile(clusterResultPath + "similarities/" + videoName + "_similarities.txt", similarities);
 
 	std::cout << "Writing super tracks in txt form" << std::endl;
 	writeSuperTracksToFile(clusterResultPath + "supertracks/" + videoName + "_superTracks.txt", superTracks);
 
 	std::cout << "Writing coords" << std::endl;
-	writeCoordsToFile(clusterResultPath, superTracks);
+	writeCoordsToFile(clusterResultPath + "superTrackCoords/" + videoName + "_coords.out", superTracks);
 	return 0;
 }

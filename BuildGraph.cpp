@@ -1,3 +1,6 @@
+// Builds a graph where nodes are trajectories and 
+// edges are the distances defined in Corso's paper[2].
+// Outputs a symmetric matrix (_dij.txt)
 #include <boost/functional/hash.hpp>
 #include <cstdio>
 #include <ctime>
@@ -6,20 +9,24 @@
 #include <random>
 
 #include "BoostRelatedHelpers.h"
-/* TODO: functional and file documentation */
-// This file outputs a symmetric matrix (_dij.txt)
-/* Read *.out, output sortedTrajectories */
+
+// Params defined in [2]
 const float TAU_S = 16.0;
 const int TAU_T = 8;
 
 using Graph = std::unordered_map<std::pair<int, int>, float, boost::hash<std::pair<int, int>>>; 
 
+// Computes educlidean distance between two 2D points
 inline float spatialDistance(const point& p1, const point& p2) {
   point diff = p1 - p2;
   return sqrt(diff.x * diff.x + diff.y * diff.y);
 }
-  
-inline std::vector<point> normalizeCoordsByFrame(const std::vector<point>& coords, const int videoWidth, const int videoHeight) {
+
+// Normalizes coordinates by video frame dimension
+inline std::vector<point> normalizeCoordsByFrame(
+  const std::vector<point>& coords, 
+  const int videoWidth, 
+  const int videoHeight) {
   std::vector<point> temporary(coords.size(), point(0.0, 0.0));  // 16
   std::transform(coords.begin(), coords.end(), temporary.begin(), 
     [videoWidth, videoHeight](const point& p){
@@ -32,11 +39,14 @@ inline std::vector<point> normalizeCoordsByFrame(const std::vector<point>& coord
 
 inline float square(float f) { return f * f; }
 
-// Generate Graph, tracks were sorted in order by ending frames
-Graph generateGraph(const std::vector<track>& tracks, const std::vector<std::vector<point>>& coords, const float r) {
+// Generates graph
+Graph generateGraph(
+  const std::vector<track>& tracks, 
+  const std::vector<std::vector<point>>& coords, 
+  const float r) {
   
   Graph D;
-
+  // NOTE: tracks were previously sorted in order by ending frames
   for(size_t traj_i = 0; traj_i < tracks.size(); traj_i++) {
 
     // find the range of traj_j within overlap
@@ -60,7 +70,7 @@ Graph generateGraph(const std::vector<track>& tracks, const std::vector<std::vec
       const int offset = endf_j - endf_i;   // offset is 'o' in the paper   
       const int overlap = TRACK_LEN - offset;
       
-      // Break early if not enough overlap
+      // Break early if not enough temporal overlap
       if(overlap < TAU_T) { 
         break;
       }
@@ -104,6 +114,9 @@ void printDistanceMatrix(const std::string& filename, const Graph& D, const int 
   // Output pspec id :track id
   // sort and print each list in neighbors 
   std::cout << "[BuildGraph] Opening output file : " << filename << std::endl;
+  // C-style IO for faster performance
+  // TODO: worth investigating other speed up methods as 
+  // this step happens to be the most time consuming step in the entire project
   FILE* fout = fopen(filename.c_str(), "w");
 
   for(auto& v : neighbors) {
@@ -141,16 +154,17 @@ void outputSortedTrajectories(const std::string& outputPath, const std::vector<t
 
 int main(int argc, char** argv) {
 
-  std::string videoPath = argv[1];    // Location of trajectories
-  std::string outputPath = argv[2];   // Location to write sortedTrajectories
-  std::string videoName = argv[3];
+  const std::string videoPath = argv[1];    // Location of trajectories
+  const std::string outputPath = argv[2];   // Location to write sortedTrajectories
+  const std::string videoName = argv[3];
 
-  float r = std::stof(argv[4]);
+  const float r = std::stof(argv[4]);
   const int MAX_NUM_TRACKS = std::stoi(argv[5]);
 
   videoRep video;
   restoreVideoRep(videoPath, video);
 
+  // Discard dummy indices and just extract the trajectories
   std::vector<track> tracks;
   std::transform(
     video.getTrackList().tracks().begin(),
@@ -178,6 +192,7 @@ int main(int argc, char** argv) {
     [](const track &a, const track &b) {
       return a.endingFrame < b.endingFrame;});
 
+  // Assigns new track ids' in the process
   outputSortedTrajectories(outputPath + videoName, tracks);
 
   // Normalize the coordinates (only used in this file)
@@ -192,7 +207,7 @@ int main(int argc, char** argv) {
   std::cout << "Generating graph, N2" << std::endl;
   Graph D = generateGraph(tracks, normalizedCoords, r);
   
-  // Output s_ij for spectral clustering
+  // Output s_ij for later spectral clustering
   printDistanceMatrix(outputPath + videoName + "_dij.txt", D, tracks.size());
 
   return 0;  

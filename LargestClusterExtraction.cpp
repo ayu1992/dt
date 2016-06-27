@@ -1,3 +1,6 @@
+/**
+ * Extracts trajectories from the largest cluster (pspectral assignment) of a video
+ */
 #include "BoostRelatedHelpers.h"
 
 trackList extractTracksInLargestCluster(
@@ -33,7 +36,6 @@ int main(int argc, char** argv) {
 	const std::string vid = argv[5];
 
 	// Reads result.txt, sortedTrajectories.out
-	// track id -> cid
 	std::cout << "reading cluster assignments" << std::endl;
 	std::unordered_map<int, int> clusterId = readClusterId(clusterResultPath);
 

@@ -1,18 +1,23 @@
-#include "BoostRelatedHelpers.h"
-#include <cstdlib>
-#include <cstdio>
-#include <boost/algorithm/string.hpp>
-// #define TeSTSUPPORT
-const int NUM_CHANNELS = 5;
-using Data = std::vector<std::vector<float>>;		// N x 4000
+// Implements Multi Channel Chi Squared SVM
+// For more details, Google search for "Cordelia Schmid Multi Channel Chi Squared SVM" 
 
-// Read TrainingSet.out (N x 20000), TestSet.out (M x 20000)
+// Reads TrainingSet.out (N x 20000), [optional] TestSet.out (M x 20000)
 // Parse them into 
 // 1. labels (N x 1) and (M x 1)
 // 2. Displacements (N x 4000) and (M x 4000)
 // 3. Hog (N x 4000) and (M x 4000) ...etc
 // Calculate Chi Squared matrices NxN and MxN
 // Output KernelTraining.out, KernelTest.out
+#include "BoostRelatedHelpers.h"
+#include <cstdlib>
+#include <cstdio>
+#include <boost/algorithm/string.hpp>
+// #define TESTSUPPORT
+
+// Dense trajectories own five channels: displacements, hog, hof ...
+const int NUM_CHANNELS = 5;					
+using Data = std::vector<std::vector<float>>;		// N x 4000
+
 std::vector<float> parseLine(std::vector<std::string>::iterator& strs_it, const int numCenters) {
 	std::vector<float> ret;
 	std::string::size_type sz;
