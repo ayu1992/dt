@@ -69,8 +69,8 @@ do
 				
 				# A Mapping of video name to number of non-empty clusters will be written to 
 				# $OUTPUT_LOCATION/actualNumClusters
-				echo "Counting actual clusters"
-				./countActualClusters $OUTPUT_LOCATION $CATEGORY$vid
+				#echo "Counting actual clusters"
+				#./countActualClusters $OUTPUT_LOCATION $CATEGORY$vid
 				
 				# Uncomment to Visualize partition quality, the binaries will produce .avi files in $OUTPUT_LOCATION
 				# echo "Drawing clustered results"
@@ -83,12 +83,12 @@ do
 				mkdir -p $OUTPUT_LOCATION"largestCluster/"
 
 				# Supertracks project
-				 echo "Merging trajectories"
-				 ./MergeTracks $_GRAPH_PATH $OUTPUT_LOCATION $c $CATEGORY $vid
+				# echo "Merging trajectories"
+				# ./MergeTracks $_GRAPH_PATH $OUTPUT_LOCATION $c $CATEGORY $vid
 				
 				# Largest Cluster Extraction (Chen & Corso)
-				# echo "Extracting largest clusters as video representations"
-				# ./LargestClusterExtraction $_GRAPH_PATH $OUTPUT_LOCATION $c $CATEGORY $vid
+				echo "Extracting largest clusters as video representations"
+				./LargestClusterExtraction $_GRAPH_PATH $OUTPUT_LOCATION $c $CATEGORY $vid
 
 				# Uncomment here and writeCoordsToFile function in MergeTracks to Visualize super tracks
 				# echo "Drawing super tracks"

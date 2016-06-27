@@ -1,4 +1,6 @@
 #!/bin/bash
+# TODO: add more literature information?
+# TODO: manage experimental stats in a google slides
 # This file serves as the main documentation for the whole project.
 # In this project we have four components/black boxes, we build different pipelines from these boxes.
 # The four components are: 

@@ -31,6 +31,8 @@ int main(int argc, char** argv) {
 		actionIndex = ucfActionClassMap[actionCategory];
 	} else if (dataset.compare("sJHMDB") == 0) {
 		actionIndex = subJHMDBActionClassMap[actionCategory];
+	} else if (dataset.compare("kth") == 0 ||  dataset.compare("msrii") == 0) {
+		actionIndex = kthActionClassMap[actionCategory];
 	} else {
 		std::cout << "[ParseTracks] Error, unable to find mapping for dataset " << dataset << std::endl;
 	}

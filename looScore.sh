@@ -3,7 +3,7 @@ source /home/hydralisk/Documents/dt/configurations.sh
 
 # Pre-generate a range of floats
 gamma="$(seq 0.015625 0.1 1)"
-cost="$(seq 5 0.1 1024)"
+cost="$(seq 8 0.5 1024)"
 
 make ChiSquaredSVM
 make BagOfWords
@@ -21,9 +21,9 @@ do
 		# For super track, uncomment the next line
 		# _TRAINING_TRAJECTORY_LOCATION=$_TRAINING_TRAJECTORY_LOCATION"r=$r/c=$c/archive/"		
 		# For [2], uncomment the next line
-		# _TRAINING_TRAJECTORY_LOCATION=$_TRAINING_TRAJECTORY_LOCATION"r=$r/c=$c/largestCluster/"
+		_TRAINING_TRAJECTORY_LOCATION=$_TRAINING_TRAJECTORY_LOCATION"r=$r/c=$c/largestCluster/"
 		# For [1]
-		# just comment out the previous two _TRAINING_TRAJECTORY_LOCATION definitions. _TRAINING_TRAJECTORY_LOCATION doesn't need to be updated in this file.
+		# just comment out the aforementioned two _TRAINING_TRAJECTORY_LOCATION definitions. _TRAINING_TRAJECTORY_LOCATION doesn't need to be updated in this file.
 
 		./BagOfWords $_TRAINING_TRAJECTORY_LOCATION $_TRAININGSET_DESTINATION $_CODEBOOK_SAMPLE $_CODEBOOK_CENTERS 
 		
