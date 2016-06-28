@@ -238,24 +238,28 @@ void writeKernel(const std::string& filepath, const Data& K, const int M, const 
 	return;
 }
 int main(int argc, char** argv) {
-	float gamma = std::stof(argv[1]);
-	const int numCenters = std::stoi(argv[2]);
-	const std::string trainingSetFile = argv[3];
-	const std::string outputLocation = argv[4];
+	const std::string gammaStr = argv[1];
+	const float gamma = std::stof(gammaStr);
+	const std::string cStr = argv[2];
+	const float c = std::stof(cStr);
+	const int numCenters = std::stoi(argv[3]);
+	const std::string trainingSetFile = argv[4];
+	const std::string outputLocation = argv[5];
 	#ifdef TESTSUPPORT
-		const std::string testingSetFile = argv[5];
+		const std::string testingSetFile = argv[6];
 	#endif
 	// Compute a chi-squared kernel over training set
 	Data displacements, hog, hof, mbhx, mbhy;
 	std::vector<int> train_labels, test_labels;
 
+	const std::string outputKernalPrefix = "g=" + gammaStr + ",c=" + cStr;
 	std::vector<float> Ac_training(5, 0.0);
 	Data train_K = buildKernelFromTrainingSet(trainingSetFile, numCenters, gamma, displacements, hog, hof, mbhx, mbhy, train_labels, Ac_training);	// N x N
-	writeKernel(outputLocation + "KernelTraining.txt", train_K, train_K.size(), train_K.size(), train_labels);
+	writeKernel(outputLocation + outputKernalPrefix + "_KernelTraining.txt", train_K, train_K.size(), train_K.size(), train_labels);
 	//TEST SET SUPPORT
 	#ifdef TESTSUPPORT
 		Data test_K = buildKernelForTestSet(testingSetFile, numCenters, gamma, displacements, hog, hof, mbhx, mbhy, test_labels, Ac_training);
-		writeKernel(outputLocation + "KernelTest.txt", test_K, test_K.size(), test_K[0].size(), test_labels);
+		writeKernel(outputLocation + outputKernalPrefix + "_KernelTest.txt", test_K, test_K.size(), test_K[0].size(), test_labels);
 	#endif
   return 0;
 }

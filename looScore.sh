@@ -26,23 +26,28 @@ do
 		# For [1]
 		# just comment out the aforementioned two _TRAINING_TRAJECTORY_LOCATION definitions. _TRAINING_TRAJECTORY_LOCATION doesn't need to be updated in this file.
 
-		./BagOfWords $_TRAINING_TRAJECTORY_LOCATION $_TRAININGSET_DESTINATION $_CODEBOOK_SAMPLE $_CODEBOOK_CENTERS 
-		
 		# For test set support, comment the previous call to BagOfWords and use this instead :
 		# ./BagOfWords $_TRAJECTORY_LOCATION $_TRAININGSET_DESTINATION $_CODEBOOK_SAMPLE $_CODEBOOK_CENTERS $_TESTING_TRAJECTORY_LOCATION
 		# TESTINGSET=$_TESTING_TRAJECTORY_LOCATION"test.out"
 		
 		TRAININGSET=$_TRAININGSET_DESTINATION"s=$_CODEBOOK_SAMPLE,nc=$_CODEBOOK_CENTERS.out"
 
+		# Remove results from the last run for a clean state
+		rm $TRAININGSET
+		# rm $TESTINGSET
+
+		./BagOfWords $_TRAINING_TRAJECTORY_LOCATION $_TRAININGSET_DESTINATION $_CODEBOOK_SAMPLE $_CODEBOOK_CENTERS 
+
 		for g in $gamma
 		do
 		  for c in $cost
 		  do 
 		  	echo "g:"$g", c:"$c
-		  	./ChiSquaredSVM $g $_CODEBOOK_CENTERS $TRAININGSET $_TRAININGSET_DESTINATION
+		  	./ChiSquaredSVM $g $c $_CODEBOOK_CENTERS $TRAININGSET $_TRAININGSET_DESTINATION
 		  	# For test set support, run this instead
 		  	# ./ChiSquaredSVM $g $_CODEBOOK_CENTERS $TRAININGSET $_TRAININGSET_DESTINATION $_TESTING_TRAJECTORY_LOCATION
-		  	$_SVM_TRAIN -s 0 -t 4 -c $c -v $_NUM_VIDEOS -q $_TRAININGSET_DESTINATION"KernelTraining.txt"
+		  	$_SVM_TRAIN -s 0 -t 4 -c $c -v $_NUM_VIDEOS -q $_TRAININGSET_DESTINATION"g=$g,c=$c""_KernelTraining.txt"
+		  	rm $_TRAININGSET_DESTINATION"g=$g,c=$c""_KernelTraining.txt"
 		  done	
 		done
 	done

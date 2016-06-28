@@ -20,9 +20,9 @@ _VIDEO_TYPE=".vob"
 # Categories and number of videos under each category in the dataset
 declare -A CATEGORIES
 # UCFSports
-CATEGORIES=(['Diving-Side']=1)
+#CATEGORIES=(['Diving-Side']=1)
 #CATEGORIES=(['Diving-Side']=5 ['Golf-Swing-Back']=5 ['Golf-Swing-Front']=8 ['Golf-Swing-Side']=5)
-#CATEGORIES=(['Diving-Side']=14 ['Golf-Swing-Back']=5 ['Golf-Swing-Front']=8 ['Golf-Swing-Side']=5 ['Kicking-Front']=10 ['Kicking-Side']=10 ['Lifting']=6 ['Riding-Horse']=12 ['Run-Side']=13 ['SkateBoarding-Front']=12 ['Swing-Bench']=20 ['Swing-SideAngle']=13 ['Walk-Front']=22)
+CATEGORIES=(['Diving-Side']=14 ['Golf-Swing-Back']=5 ['Golf-Swing-Front']=8 ['Golf-Swing-Side']=5 ['Kicking-Front']=10 ['Kicking-Side']=10 ['Lifting']=6 ['Riding-Horse']=12 ['Run-Side']=13 ['SkateBoarding-Front']=12 ['Swing-Bench']=20 ['Swing-SideAngle']=13 ['Walk-Front']=22)
 
 # sJHMDB
 #CATEGORIES=(['catch']=1)
@@ -66,11 +66,11 @@ _RAW_TRACK_CAP=6000
 
 # Gamma value defined in [2] page 4 equation 4, we experiment with different values of gamma
 # Values need to be seperated by spaces
-_TEMPORAL_MISALIGNMENT_PENALTY=(0.05)
+_TEMPORAL_MISALIGNMENT_PENALTY=(0.07)
 
 # Maximum number of clusters pspectralclustering can make, the number of non-empty clusters after 
 # pspectralclustering tend to be much lower than this amount. This value affects the clustering result.
-_MAX_NUM_CLUSTER=(200)
+_MAX_NUM_CLUSTER=(300)
 
 # Location to store the results of spectral clustered trajectories
 #
@@ -106,11 +106,11 @@ _CHANNEL=All
 
 # Sample $_CODEBOOK_SAMPLE trajectories from to build codebooks
 # In the Dense Track [1] literature, this is set to 100,000
-_CODEBOOK_SAMPLE=4000
+_CODEBOOK_SAMPLE=6000
 
 # Dimension of each codebook
 # In the Dense Track literature [1], this is set to 4,000
-_CODEBOOK_CENTERS=500
+_CODEBOOK_CENTERS=600
 
 # Location to put training set features, svm will read from here
 _TRAININGSET_DESTINATION="LargestCluster/"

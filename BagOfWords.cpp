@@ -298,12 +298,12 @@ int main(int argc, char** argv) {
 	// Randomly sample some trajectories to build codebooks
 	// If there is huge amount of trajectories in the training data, 
 	// use reservoir sampling by uncommenting the following two lines
-	std::vector<track> samples(kNumRandomSamples);
-	getSamplesByReservoirSampling(samples, trainingSetNames, trainingSetPath, kNumRandomSamples);
+	//std::vector<track> samples(kNumRandomSamples);
+	//getSamplesByReservoirSampling(samples, trainingSetNames, trainingSetPath, kNumRandomSamples);
 	
 	// If there's only a few hundreds of trajectories, random sampling is recommended
-	// std::vector<track> samples = 
-	//    getSamplesByRandomSampling(trainingSetNames, trainingSetPath, kNumRandomSamples);
+	 std::vector<track> samples = 
+	    getSamplesByRandomSampling(trainingSetNames, trainingSetPath, kNumRandomSamples);
 
 	std::cout << samples.size() << "samples" << std::endl;
 
